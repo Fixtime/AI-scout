@@ -909,31 +909,66 @@ select.form-control {
 .case-footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-top: var(--space-16);
   padding-top: var(--space-16);
   border-top: 1px solid var(--color-border);
+  gap: var(--space-16);
+}
+
+.case-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  align-items: center;
 }
 
 .roi-estimate {
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
 }
 
-.prompt-btn {
+.prompt-btn, .export-json-btn, .export-md-btn {
   padding: var(--space-6) var(--space-12);
-  background: var(--color-secondary);
-  color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-base);
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.prompt-btn {
+  background: var(--color-secondary);
+  color: var(--color-text);
 }
 
 .prompt-btn:hover {
   background: var(--color-secondary-hover);
+}
+
+.export-json-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: #059669;
+}
+
+.export-json-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+}
+
+.export-md-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border-color: #4f46e5;
+}
+
+.export-md-btn:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-1px);
 }
 
 /* Modal */
@@ -1076,6 +1111,16 @@ select.form-control {
     align-items: flex-start;
   }
   
+  .case-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .export-json-btn, .export-md-btn {
+    font-size: var(--font-size-xs);
+    padding: var(--space-4) var(--space-8);
+  }
+  
   .modal {
     padding: var(--space-16);
   }
@@ -1186,4 +1231,124 @@ select.form-control {
   opacity: 0.7;
   pointer-events: none;
   transform: none;
+}
+
+/* Automation Pipeline */
+.automation-pipeline {
+  margin-bottom: var(--space-16);
+}
+
+.pipeline-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-12);
+  color: var(--color-text);
+}
+
+.pipeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  background: var(--color-background);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.pipeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  bottom: -8px;
+  width: 2px;
+  height: 8px;
+  background: var(--color-primary);
+}
+
+.step-number {
+  background: var(--color-primary);
+  color: var(--color-btn-primary-text);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-action {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+.step-tool {
+  background: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  display: inline-block;
+  margin-bottom: var(--space-4);
+}
+
+.step-description {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.pipeline-placeholder {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--space-16);
+  background: var(--color-secondary);
+  border-radius: var(--radius-base);
+}
+
+.case-footer {
+  flex-direction: column;
+  gap: var(--space-12);
+  align-items: flex-start;
+}
+
+.case-buttons {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.export-json-btn, .export-md-btn {
+  font-size: var(--font-size-xs);
+  padding: var(--space-4) var(--space-8);
+}
+
+.pipeline-step {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.step-number {
+  align-self: flex-start;
+}
+
+.modal {
+  padding: var(--space-20);
 }

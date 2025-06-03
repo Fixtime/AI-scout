@@ -129,7 +129,8 @@ class AIDelegate {
 1. Проанализируй роль и определи ключевые функции для автоматизации
 2. Сгенерируй минимум 6 конкретных кейсов автоматизации
 3. Для каждого кейса создай детальный системный промпт для AI агента
-4. Учитывай специфику российского рынка и доступные инструменты
+4. Создай пошаговый пайплайн автоматизации используя Make или n8n
+5. Учитывай специфику российского рынка и доступные инструменты
 
 КРИТИЧЕСКИ ВАЖНО: Верни ТОЛЬКО валидный JSON, без дополнительного текста. Начни ответ сразу с {
 
@@ -145,7 +146,24 @@ class AIDelegate {
       "roiEstimate": "30-50%",
       "complexity": "низкая/средняя/высокая",
       "tools": ["конкретный инструмент 1", "конкретный инструмент 2"],
-      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов."
+      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов.",
+      "automationPipeline": {
+        "platform": "Make/n8n",
+        "steps": [
+          {
+            "step": 1,
+            "action": "Триггер (например: Получение email)",
+            "tool": "Gmail/Outlook",
+            "description": "Краткое описание шага"
+          },
+          {
+            "step": 2,
+            "action": "Обработка данных",
+            "tool": "OpenAI/Claude",
+            "description": "Краткое описание шага"
+          }
+        ]
+      }
     }
   ]
 }
@@ -156,6 +174,13 @@ class AIDelegate {
 - Примеры использования
 - Критерии качества результата
 - Обработка edge cases
+
+ТРЕБОВАНИЯ К ПАЙПЛАЙНАМ АВТОМАТИЗАЦИИ:
+- Используй платформы Make (Integromat) или n8n
+- 3-7 шагов в пайплайне
+- Конкретные триггеры и действия
+- Популярные интеграции (Gmail, Slack, Telegram, Google Sheets)
+- Реалистичная реализация без сложного кода
 
 Роль для анализа: ${roleDescription}`;
 
@@ -234,7 +259,30 @@ class AIDelegate {
                         roiEstimate: "20-30%",
                         complexity: "низкая",
                         tools: ["Zapier", "Gmail API"],
-                        systemPrompt: "Ты помощник для автоматизации email-коммуникаций. Анализируй входящие письма и предлагай подходящие ответы. Сортируй письма по приоритету и создавай краткие сводки для руководителя."
+                        systemPrompt: "Ты помощник для автоматизации email-коммуникаций. Анализируй входящие письма и предлагай подходящие ответы. Сортируй письма по приоритету и создавай краткие сводки для руководителя.",
+                        automationPipeline: {
+                            platform: "Make",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Получение нового email",
+                                    tool: "Gmail",
+                                    description: "Триггер при получении нового письма"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Анализ содержимого",
+                                    tool: "OpenAI",
+                                    description: "Определение темы и приоритета письма"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Отправка уведомления",
+                                    tool: "Telegram",
+                                    description: "Уведомление в Telegram о важном письме"
+                                }
+                            ]
+                        }
                     }
                 ]
             };
@@ -269,7 +317,24 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
       "roiEstimate": "30-50%",
       "complexity": "низкая/средняя/высокая",
       "tools": ["конкретный инструмент 1", "конкретный инструмент 2"],
-      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов."
+      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов.",
+      "automationPipeline": {
+        "platform": "Make/n8n",
+        "steps": [
+          {
+            "step": 1,
+            "action": "Триггер (например: Получение email)",
+            "tool": "Gmail/Outlook",
+            "description": "Краткое описание шага"
+          },
+          {
+            "step": 2,
+            "action": "Обработка данных",
+            "tool": "OpenAI/Claude",
+            "description": "Краткое описание шага"
+          }
+        ]
+      }
     }
   ]
 }
@@ -280,6 +345,13 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
 - Примеры использования
 - Критерии качества результата
 - Обработка edge cases
+
+ТРЕБОВАНИЯ К ПАЙПЛАЙНАМ АВТОМАТИЗАЦИИ:
+- Используй платформы Make (Integromat) или n8n
+- 3-7 шагов в пайплайне
+- Конкретные триггеры и действия
+- Популярные интеграции (Gmail, Slack, Telegram, Google Sheets)
+- Реалистичная реализация без сложного кода
 
 Роль для анализа: ${roleDescription}`;
 
@@ -352,7 +424,184 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
                         roiEstimate: "15-25%",
                         complexity: "средняя",
                         tools: ["Google Sheets API", "Power BI"],
-                        systemPrompt: "Ты помощник для автоматизации отчетности. Собирай данные из различных источников, анализируй тренды и создавай структурированные отчеты с ключевыми метриками."
+                        systemPrompt: "Ты помощник для автоматизации отчетности. Собирай данные из различных источников, анализируй тренды и создавай структурированные отчеты с ключевыми метриками.",
+                        automationPipeline: {
+                            platform: "Make",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Получение данных из Google Sheets",
+                                    tool: "Google Sheets API",
+                                    description: "Триггер при получении новых данных"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Анализ данных",
+                                    tool: "Power BI",
+                                    description: "Анализ данных и создание отчета"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Отправка отчета",
+                                    tool: "Email",
+                                    description: "Отправка отчета на email руководителя"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Автоматизация социальных сетей",
+                        description: "Планирование и публикация контента в социальных сетях",
+                        priority: "низкий",
+                        roiEstimate: "10-20%",
+                        complexity: "низкая",
+                        tools: ["Buffer", "Telegram Bot API"],
+                        systemPrompt: "Ты помощник для управления социальными сетями. Создавай контент-план, планируй публикации и анализируй эффективность постов.",
+                        automationPipeline: {
+                            platform: "Make",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Создание контента",
+                                    tool: "OpenAI",
+                                    description: "Генерация постов для соцсетей"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Планирование публикации",
+                                    tool: "Buffer",
+                                    description: "Автоматическая публикация в соцсети"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Автоматизация обработки документов",
+                        description: "Автоматическое извлечение и обработка данных из документов",
+                        priority: "средний",
+                        roiEstimate: "25-35%",
+                        complexity: "высокая",
+                        tools: ["OCR API", "Google Drive API"],
+                        systemPrompt: "Ты помощник для обработки документов. Извлекай текст из PDF, анализируй содержимое и структурируй данные.",
+                        automationPipeline: {
+                            platform: "n8n",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Получение документа",
+                                    tool: "Google Drive",
+                                    description: "Триггер при загрузке нового документа"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Извлечение текста",
+                                    tool: "OCR API",
+                                    description: "Распознавание текста в документе"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Обработка данных",
+                                    tool: "OpenAI",
+                                    description: "Структурирование извлеченных данных"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Автоматизация backup данных",
+                        description: "Регулярное резервное копирование важных данных",
+                        priority: "высокий",
+                        roiEstimate: "40-60%",
+                        complexity: "средняя",
+                        tools: ["Google Drive API", "Yandex.Disk API"],
+                        systemPrompt: "Ты помощник для резервного копирования. Следи за важными файлами, создавай бэкапы и уведомляй о статусе операций.",
+                        automationPipeline: {
+                            platform: "Make",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Проверка файлов",
+                                    tool: "File System",
+                                    description: "Ежедневная проверка изменений"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Создание бэкапа",
+                                    tool: "Google Drive",
+                                    description: "Загрузка измененных файлов"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Уведомление",
+                                    tool: "Telegram",
+                                    description: "Отчет о статусе бэкапа"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Автоматизация мониторинга конкурентов",
+                        description: "Отслеживание цен и новостей конкурентов",
+                        priority: "низкий",
+                        roiEstimate: "15-30%",
+                        complexity: "средняя",
+                        tools: ["Web Scraping", "RSS Parser"],
+                        systemPrompt: "Ты помощник для мониторинга конкурентов. Отслеживай изменения цен, новые продукты и новости компаний-конкурентов.",
+                        automationPipeline: {
+                            platform: "n8n",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Сбор данных с сайтов",
+                                    tool: "Web Scraper",
+                                    description: "Ежедневный парсинг сайтов конкурентов"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Анализ изменений",
+                                    tool: "OpenAI",
+                                    description: "Выявление значимых изменений"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Отправка отчета",
+                                    tool: "Slack",
+                                    description: "Уведомление команды об изменениях"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Автоматизация инвентаризации",
+                        description: "Учет и контроль материальных ценностей",
+                        priority: "средний",
+                        roiEstimate: "20-35%",
+                        complexity: "низкая",
+                        tools: ["QR Scanner", "Google Sheets"],
+                        systemPrompt: "Ты помощник для управления инвентарем. Отслеживай движение товаров, контролируй остатки и планируй закупки.",
+                        automationPipeline: {
+                            platform: "Make",
+                            steps: [
+                                {
+                                    step: 1,
+                                    action: "Сканирование QR-кода",
+                                    tool: "QR Scanner",
+                                    description: "Считывание информации о товаре"
+                                },
+                                {
+                                    step: 2,
+                                    action: "Обновление базы",
+                                    tool: "Google Sheets",
+                                    description: "Запись данных в таблицу"
+                                },
+                                {
+                                    step: 3,
+                                    action: "Проверка остатков",
+                                    tool: "OpenAI",
+                                    description: "Анализ необходимости докупки"
+                                }
+                            ]
+                        }
                     }
                 ]
             };
@@ -423,7 +672,6 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         element.className = 'automation-case fade-in';
         
         const priorityClass = this.getPriorityClass(caseItem.priority);
-        const complexityText = this.getComplexityText(caseItem.complexity);
         
         element.innerHTML = `
             <div class="case-header">
@@ -438,7 +686,7 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
                 </div>
                 <div class="meta-item">
                     <span class="meta-label">Сложность:</span>
-                    <span class="meta-value">${caseItem.complexity} (${complexityText})</span>
+                    <span class="meta-value">${caseItem.complexity}</span>
                 </div>
             </div>
             
@@ -449,9 +697,33 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
                 </div>
             </div>
             
+            <div class="automation-pipeline">
+                <div class="pipeline-label">Пайплайн автоматизации (${caseItem.automationPipeline?.platform || 'Make'}):</div>
+                <div class="pipeline-steps">
+                    ${caseItem.automationPipeline?.steps?.map(step => `
+                        <div class="pipeline-step">
+                            <div class="step-number">${step.step}</div>
+                            <div class="step-content">
+                                <div class="step-action">${step.action}</div>
+                                <div class="step-tool">${step.tool}</div>
+                                <div class="step-description">${step.description}</div>
+                            </div>
+                        </div>
+                    `).join('') || '<div class="pipeline-placeholder">Пайплайн генерируется...</div>'}
+                </div>
+            </div>
+            
             <div class="case-footer">
                 <div class="roi-estimate">ROI: ${caseItem.roiEstimate}</div>
-                <button class="prompt-btn" data-case-index="${index}">Системный промпт</button>
+                <div class="case-buttons">
+                    <button class="prompt-btn" data-case-index="${index}">Системный промпт</button>
+                    <button class="export-json-btn" data-case-index="${index}">
+                        Скачать ${caseItem.automationPipeline?.platform || 'Make'} JSON
+                    </button>
+                    <button class="export-md-btn" data-case-index="${index}">
+                        Скачать MD
+                    </button>
+                </div>
             </div>
         `;
         
@@ -459,6 +731,18 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         const promptBtn = element.querySelector('.prompt-btn');
         promptBtn.addEventListener('click', () => {
             this.showSystemPrompt(caseItem.title, caseItem.systemPrompt);
+        });
+        
+        // Add event listener for JSON export button
+        const exportJsonBtn = element.querySelector('.export-json-btn');
+        exportJsonBtn.addEventListener('click', () => {
+            this.exportWorkflowJSON(caseItem, index);
+        });
+        
+        // Add event listener for MD export button
+        const exportMdBtn = element.querySelector('.export-md-btn');
+        exportMdBtn.addEventListener('click', () => {
+            this.exportCaseMarkdown(caseItem, index);
         });
         
         return element;
@@ -471,15 +755,6 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
             'низкий': 'priority-low'
         };
         return classes[priority] || 'priority-low';
-    }
-
-    getComplexityText(complexity) {
-        const texts = {
-            'низкая': '1-2 недели внедрения',
-            'средняя': '1-2 месяца внедрения',
-            'высокая': '3+ месяцев внедрения'
-        };
-        return texts[complexity] || '1-2 недели внедрения';
     }
 
     showSystemPrompt(title, prompt) {
@@ -592,6 +867,185 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         document.querySelectorAll('.error-message, .success-message').forEach(msg => {
             msg.remove();
         });
+    }
+
+    exportWorkflowJSON(caseItem, index) {
+        const platform = caseItem.automationPipeline?.platform || 'Make';
+        let workflowJSON;
+        
+        if (platform.toLowerCase().includes('make')) {
+            workflowJSON = this.generateMakeWorkflow(caseItem);
+        } else {
+            workflowJSON = this.generateN8nWorkflow(caseItem);
+        }
+        
+        const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], {
+            type: 'application/json'
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.slugify(caseItem.title)}-${platform.toLowerCase()}-workflow.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showSuccess(`${platform} workflow JSON скачан`);
+    }
+
+    generateMakeWorkflow(caseItem) {
+        const modules = caseItem.automationPipeline?.steps?.map((step, index) => ({
+            id: index + 1,
+            module: step.tool.replace(/\s+/g, '').toLowerCase(),
+            version: 1,
+            parameters: {},
+            mapper: {},
+            metadata: {
+                designer: {
+                    x: 100 + (index * 200),
+                    y: 100
+                },
+                restore: {},
+                parameters: [],
+                expect: []
+            }
+        })) || [];
+
+        return {
+            name: caseItem.title,
+            description: caseItem.description,
+            flow: modules,
+            metadata: {
+                instant: false,
+                version: 1,
+                scenario: {
+                    roundtrips: 1,
+                    maxErrors: 3,
+                    autoCommit: true,
+                    autoCommitTriggerLast: true,
+                    sequential: false,
+                    slots: null,
+                    confidential: false,
+                    dataloss: false,
+                    dlq: false,
+                    freshVariables: false
+                },
+                designer: {
+                    orphans: []
+                },
+                zone: "eu1.make.com"
+            }
+        };
+    }
+
+    generateN8nWorkflow(caseItem) {
+        const nodes = caseItem.automationPipeline?.steps?.map((step, index) => ({
+            id: `node_${index}`,
+            name: step.action,
+            type: step.tool.replace(/\s+/g, '').toLowerCase(),
+            typeVersion: 1,
+            position: [100 + (index * 200), 100],
+            parameters: {},
+            credentials: {},
+            webhookId: index === 0 ? "webhook_id" : undefined
+        })) || [];
+
+        const connections = {};
+        nodes.forEach((node, index) => {
+            if (index < nodes.length - 1) {
+                connections[node.name] = {
+                    main: [[{
+                        node: nodes[index + 1].name,
+                        type: "main",
+                        index: 0
+                    }]]
+                };
+            }
+        });
+
+        return {
+            name: caseItem.title,
+            nodes: nodes,
+            connections: connections,
+            active: false,
+            settings: {},
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            versionId: "1",
+            id: `workflow_${Date.now()}`
+        };
+    }
+
+    exportCaseMarkdown(caseItem, index) {
+        const platform = caseItem.automationPipeline?.platform || 'Make';
+        const workflowJSON = platform.toLowerCase().includes('make') 
+            ? this.generateMakeWorkflow(caseItem) 
+            : this.generateN8nWorkflow(caseItem);
+        
+        const markdown = `# ${caseItem.title}
+
+## 📋 Описание кейса
+${caseItem.description}
+
+## 📊 Характеристики
+- **Приоритет:** ${caseItem.priority}
+- **ROI:** ${caseItem.roiEstimate}
+- **Сложность:** ${caseItem.complexity}
+- **Платформа автоматизации:** ${platform}
+
+## 🛠 Рекомендуемые инструменты
+${caseItem.tools.map(tool => `- ${tool}`).join('\n')}
+
+## 🔄 Пайплайн автоматизации
+
+${caseItem.automationPipeline?.steps?.map(step => 
+`### Шаг ${step.step}: ${step.action}
+- **Инструмент:** ${step.tool}
+- **Описание:** ${step.description}`
+).join('\n\n') || 'Пайплайн не определен'}
+
+## 🤖 Системный промпт для AI-агента
+
+\`\`\`
+${caseItem.systemPrompt}
+\`\`\`
+
+## 📥 JSON Workflow для ${platform}
+
+\`\`\`json
+${JSON.stringify(workflowJSON, null, 2)}
+\`\`\`
+
+---
+
+*Создано с помощью AI Delegation Helper*
+*Дата создания: ${new Date().toLocaleDateString('ru-RU')}*
+`;
+
+        const blob = new Blob([markdown], {
+            type: 'text/markdown;charset=utf-8'
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.slugify(caseItem.title)}-automation-case.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showSuccess('Markdown файл скачан');
+    }
+
+    slugify(text) {
+        return text
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '') // Remove special characters
+            .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+            .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
     }
 }
 
