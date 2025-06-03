@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Delegation Helper</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI Delegation Helper</h1>
+            <p class="header__subtitle">Определите функции для автоматизации с помощью AI агентов</p>
+        </header>
+
+        <main>
+            <!-- API Key Input Section -->
+            <section class="api-section card">
+                <div class="card__body">
+                    <h2>Настройка API</h2>
+                    <div class="form-group">
+                        <label for="apiKey" class="form-label">OpenAI API Ключ</label>
+                        <input type="password" id="apiKey" class="form-control" placeholder="sk-...">
+                        <small class="api-warning">⚠️ API ключ не сохраняется и используется только для текущей сессии</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Role Input Section -->
+            <section class="role-section card">
+                <div class="card__body">
+                    <h2>Описание роли</h2>
+                    <div class="form-group">
+                        <label for="roleDescription" class="form-label">Опишите вашу роль и обязанности</label>
+                        <textarea id="roleDescription" class="form-control role-textarea" rows="6" placeholder="Например: Chief Product Officer (CPO) в IT компании с командой 100+ человек. Отвечаю за продуктовую стратегию, управление roadmap, координацию между командами разработки, дизайна и маркетинга..."></textarea>
+                    </div>
+                    <button id="analyzeBtn" class="btn btn--primary btn--full-width">
+                        <span class="btn-text">Анализировать роль и генерировать рекомендации</span>
+                        <span class="btn-loader hidden">Анализируем...</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sample Roles -->
+            <section class="samples-section">
+                <h3>Примеры ролей:</h3>
+                <div class="sample-roles">
+                    <button class="sample-role-btn" data-role="Chief Product Officer (CPO) в IT компании с командой 100+ человек">CPO IT компании</button>
+                    <button class="sample-role-btn" data-role="Head of Marketing в e-commerce проекте">Head of Marketing</button>
+                    <button class="sample-role-btn" data-role="Руководитель отдела продаж B2B SaaS">Руководитель продаж B2B</button>
+                    <button class="sample-role-btn" data-role="CTO стартапа в финтех сфере">CTO финтех стартапа</button>
+                    <button class="sample-role-btn" data-role="Менеджер проектов в digital агентстве">PM digital агентства</button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="results-section hidden">
+                <div class="results-header">
+                    <h2>Рекомендации по автоматизации</h2>
+                    <div class="results-actions">
+                        <span id="recommendationsCount" class="recommendations-count">0 рекомендаций</span>
+                        <button id="clearBtn" class="btn btn--secondary">Очистить результаты</button>
+                    </div>
+                </div>
+
+                <!-- Role Analysis -->
+                <div id="roleAnalysis" class="role-analysis card">
+                    <div class="card__body">
+                        <h3>Анализ роли</h3>
+                        <div id="roleAnalysisContent"></div>
+                        <h4 class="best-practices-title">Лучшие практики</h4>
+                        <div id="bestPracticesContent"></div>
+                    </div>
+                </div>
+
+                <!-- Automation Cases -->
+                <div class="automation-cases">
+                    <h3>Рекомендуемые кейсы автоматизации</h3>
+                    <div id="automationGrid" class="automation-grid"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for System Prompt -->
+    <div id="promptModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Системный промпт</h3>
+                <button id="closeModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="systemPromptContent" class="system-prompt-content"></pre>
+            </div>
+            <div class="modal-footer">
+                <button id="copyPrompt" class="btn btn--primary">Копировать промпт</button>
+                <button id="closeModalBtn" class="btn btn--secondary">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="loading-indicator hidden">
+        <div class="loading-spinner"></div>
+        <p>Генерируем персонализированные рекомендации...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
