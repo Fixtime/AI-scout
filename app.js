@@ -26,6 +26,11 @@ class AIDelegate {
             this.clearResults();
         });
 
+        // Generate more button
+        document.getElementById('generateMoreBtn').addEventListener('click', () => {
+            this.generateMoreCases();
+        });
+
         // Sample role buttons
         document.querySelectorAll('.sample-role-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -89,6 +94,32 @@ class AIDelegate {
         }
     }
 
+    async generateMoreCases() {
+        if (!this.apiKey) {
+            this.showError('Пожалуйста, введите OpenAI API ключ');
+            return;
+        }
+
+        if (!this.currentResults) {
+            this.showError('Сначала выполните анализ роли');
+            return;
+        }
+
+        const roleDescription = document.getElementById('roleDescription').value.trim();
+        this.showMoreLoading(true);
+        
+        try {
+            const existingTitles = this.currentResults.automationCases.map(c => c.title);
+            const newRecommendations = await this.callOpenAIForMore(roleDescription, existingTitles);
+            this.addMoreResults(newRecommendations);
+        } catch (error) {
+            console.error('Error generating more cases:', error);
+            this.showError('Ошибка при генерации дополнительных кейсов: ' + error.message);
+        } finally {
+            this.showMoreLoading(false);
+        }
+    }
+
     async callOpenAI(roleDescription) {
         const systemPrompt = `Ты эксперт по автоматизации бизнес-процессов и внедрению AI агентов. Твоя задача - проанализировать описание роли пользователя и создать персонализированные рекомендации по автоматизации.
 
@@ -99,6 +130,8 @@ class AIDelegate {
 2. Сгенерируй минимум 6 конкретных кейсов автоматизации
 3. Для каждого кейса создай детальный системный промпт для AI агента
 4. Учитывай специфику российского рынка и доступные инструменты
+
+КРИТИЧЕСКИ ВАЖНО: Верни ТОЛЬКО валидный JSON, без дополнительного текста. Начни ответ сразу с {
 
 ФОРМАТ ОТВЕТА - строго JSON:
 {
@@ -129,7 +162,7 @@ class AIDelegate {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json; charset=utf-8',
                 'Authorization': `Bearer ${this.apiKey}`
             },
             body: JSON.stringify({
@@ -151,14 +184,180 @@ class AIDelegate {
         }
 
         const data = await response.json();
-        const content = data.choices[0].message.content;
+        let content = data.choices[0].message.content.trim();
         
+        console.log('Raw OpenAI response:', content);
+        
+        // Попробуем извлечь JSON из ответа
         try {
-            return JSON.parse(content);
+            // Если ответ начинается не с {, попробуем найти JSON
+            if (!content.startsWith('{')) {
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    content = jsonMatch[0];
+                } else {
+                    throw new Error('JSON не найден в ответе');
+                }
+            }
+            
+            // Попробуем очистить возможные проблемы с кодировкой
+            content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+            // Исправляем возможные проблемы с кавычками
+            content = content.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+            
+            const result = JSON.parse(content);
+            
+            // Проверим обязательные поля
+            if (!result.roleAnalysis || !result.bestPractices || !result.automationCases) {
+                throw new Error('Отсутствуют обязательные поля в ответе');
+            }
+            
+            if (!Array.isArray(result.automationCases) || result.automationCases.length === 0) {
+                throw new Error('Нет кейсов автоматизации в ответе');
+            }
+            
+            return result;
+            
         } catch (parseError) {
             console.error('JSON parse error:', parseError);
-            console.log('Raw content:', content);
-            throw new Error('Ошибка парсинга ответа от OpenAI');
+            console.error('Content that failed to parse:', content);
+            
+            // Fallback: создадим базовый ответ
+            const fallbackResponse = {
+                roleAnalysis: "К сожалению, не удалось полностью проанализировать роль из-за технических проблем. Попробуйте повторить запрос или упростить описание роли.",
+                bestPractices: "Рекомендуем начать с автоматизации простых повторяющихся задач и постепенно переходить к более сложным процессам.",
+                automationCases: [
+                    {
+                        title: "Автоматизация email-уведомлений",
+                        description: "Настройка автоматических уведомлений и ответов на типовые запросы",
+                        priority: "высокий",
+                        roiEstimate: "20-30%",
+                        complexity: "низкая",
+                        tools: ["Zapier", "Gmail API"],
+                        systemPrompt: "Ты помощник для автоматизации email-коммуникаций. Анализируй входящие письма и предлагай подходящие ответы. Сортируй письма по приоритету и создавай краткие сводки для руководителя."
+                    }
+                ]
+            };
+            
+            return fallbackResponse;
+        }
+    }
+
+    async callOpenAIForMore(roleDescription, existingTitles) {
+        const systemPrompt = `Ты эксперт по автоматизации бизнес-процессов и внедрению AI агентов. Пользователь уже получил первый набор рекомендаций и хочет еще 6 ДОПОЛНИТЕЛЬНЫХ кейсов автоматизации.
+
+КОНТЕКСТ: Российский рынок, современные инструменты автоматизации (Zapier, UiPath, AI агенты), фокус на практическое применение и ROI.
+
+УЖЕ ПРЕДЛОЖЕННЫЕ КЕЙСЫ (НЕ ПОВТОРЯЙ ИХ):
+${existingTitles.map(title => `- ${title}`).join('\n')}
+
+ИНСТРУКЦИИ:
+1. Сгенерируй 6 НОВЫХ кейсов автоматизации, которые НЕ дублируют уже предложенные
+2. Фокусируйся на более специализированных или менее приоритетных функциях
+3. Создай детальный системный промпт для каждого AI агента
+4. Рассмотри менее очевидные, но полезные процессы для автоматизации
+
+КРИТИЧЕСКИ ВАЖНО: Верни ТОЛЬКО валидный JSON, без дополнительного текста. Начни ответ сразу с {
+
+ФОРМАТ ОТВЕТА - строго JSON:
+{
+  "automationCases": [
+    {
+      "title": "конкретное название функции (НЕ ПОВТОРЯЮЩЕЕ УЖЕ ПРЕДЛОЖЕННЫЕ)",
+      "description": "подробное описание что именно автоматизируется",
+      "priority": "высокий/средний/низкий", 
+      "roiEstimate": "30-50%",
+      "complexity": "низкая/средняя/высокая",
+      "tools": ["конкретный инструмент 1", "конкретный инструмент 2"],
+      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов."
+    }
+  ]
+}
+
+ТРЕБОВАНИЯ К СИСТЕМНЫМ ПРОМПТАМ:
+- Конкретные, actionable инструкции
+- Формат входных и выходных данных
+- Примеры использования
+- Критерии качества результата
+- Обработка edge cases
+
+Роль для анализа: ${roleDescription}`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: systemPrompt
+                    }
+                ],
+                temperature: 0.8,
+                max_tokens: 4000
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        let content = data.choices[0].message.content.trim();
+        
+        console.log('Raw OpenAI response for more cases:', content);
+        
+        // Попробуем извлечь JSON из ответа
+        try {
+            // Если ответ начинается не с {, попробуем найти JSON
+            if (!content.startsWith('{')) {
+                const jsonMatch = content.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    content = jsonMatch[0];
+                } else {
+                    throw new Error('JSON не найден в ответе');
+                }
+            }
+            
+            // Попробуем очистить возможные проблемы с кодировкой
+            content = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+            // Исправляем возможные проблемы с кавычками
+            content = content.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+            
+            const result = JSON.parse(content);
+            
+            // Проверим обязательные поля
+            if (!result.automationCases || !Array.isArray(result.automationCases)) {
+                throw new Error('Нет кейсов автоматизации в ответе');
+            }
+            
+            return result;
+            
+        } catch (parseError) {
+            console.error('JSON parse error for more cases:', parseError);
+            console.error('Content that failed to parse:', content);
+            
+            // Fallback: создадим дополнительные базовые кейсы
+            const fallbackResponse = {
+                automationCases: [
+                    {
+                        title: "Автоматизация отчетности",
+                        description: "Автоматическое создание еженедельных и месячных отчетов",
+                        priority: "средний",
+                        roiEstimate: "15-25%",
+                        complexity: "средняя",
+                        tools: ["Google Sheets API", "Power BI"],
+                        systemPrompt: "Ты помощник для автоматизации отчетности. Собирай данные из различных источников, анализируй тренды и создавай структурированные отчеты с ключевыми метриками."
+                    }
+                ]
+            };
+            
+            return fallbackResponse;
         }
     }
 
@@ -179,11 +378,34 @@ class AIDelegate {
         // Display automation cases
         this.displayAutomationCases(recommendations.automationCases);
         
+        // Show generate more button
+        document.getElementById('generateMoreBtn').classList.remove('hidden');
+        
         // Scroll to results
         document.getElementById('resultsSection').scrollIntoView({ 
             behavior: 'smooth',
             block: 'start'
         });
+    }
+
+    addMoreResults(newRecommendations) {
+        // Добавляем новые кейсы к существующим
+        this.currentResults.automationCases = this.currentResults.automationCases.concat(newRecommendations.automationCases);
+        
+        // Обновляем счетчик
+        const count = this.currentResults.automationCases.length;
+        document.getElementById('recommendationsCount').textContent = `${count} рекомендаций`;
+        
+        // Добавляем новые кейсы в сетку
+        const startIndex = this.currentResults.automationCases.length - newRecommendations.automationCases.length;
+        newRecommendations.automationCases.forEach((caseItem, index) => {
+            const caseElement = this.createCaseElement(caseItem, startIndex + index);
+            caseElement.style.animationDelay = `${index * 0.1}s`;
+            document.getElementById('automationGrid').appendChild(caseElement);
+        });
+        
+        // Показываем кнопку снова
+        document.getElementById('generateMoreBtn').classList.remove('hidden');
     }
 
     displayAutomationCases(cases) {
@@ -293,6 +515,7 @@ class AIDelegate {
     clearResults() {
         document.getElementById('resultsSection').classList.add('hidden');
         document.getElementById('automationGrid').innerHTML = '';
+        document.getElementById('generateMoreBtn').classList.add('hidden');
         this.currentResults = null;
     }
 
@@ -316,6 +539,24 @@ class AIDelegate {
             btnText.classList.remove('hidden');
             btnLoader.classList.add('hidden');
             document.body.style.overflow = 'auto';
+        }
+    }
+
+    showMoreLoading(show) {
+        const generateMoreBtn = document.getElementById('generateMoreBtn');
+        const btnText = generateMoreBtn.querySelector('.btn-text');
+        const btnLoader = generateMoreBtn.querySelector('.btn-loader');
+        
+        if (show) {
+            generateMoreBtn.disabled = true;
+            generateMoreBtn.classList.add('loading');
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+        } else {
+            generateMoreBtn.disabled = false;
+            generateMoreBtn.classList.remove('loading');
+            btnText.classList.remove('hidden');
+            btnLoader.classList.add('hidden');
         }
     }
 
