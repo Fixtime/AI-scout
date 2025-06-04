@@ -1,91 +1,122 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-color-scheme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Delegation Helper</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI scout</title>
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>AI Delegation Helper</h1>
-            <p class="header__subtitle">Определите функции для автоматизации с помощью AI агентов</p>
-        </header>
-
-        <main>
-            <!-- API Key Input Section -->
-            <section class="api-section card">
-                <div class="card__body">
-                    <h2>Настройка API</h2>
-                    <div class="form-group">
-                        <label for="apiKey" class="form-label">OpenAI API Ключ</label>
-                        <input type="password" id="apiKey" class="form-control" placeholder="sk-...">
-                        <small class="api-warning">⚠️ API ключ не сохраняется и используется только для текущей сессии</small>
-                    </div>
+    <div class="ide-container">
+        <!-- Левая колонка: Настройки и анализ -->
+        <div class="left-panel">
+            <header class="panel-header">
+                <div>
+                    <h1>AI scout</h1>
+                    <p class="header-subtitle">Скаут найдет место для агентов в твоей работе</p>
                 </div>
-            </section>
+                <button id="themeToggle" class="theme-toggle" title="Переключить тему">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </header>
 
-            <!-- Role Input Section -->
-            <section class="role-section card">
-                <div class="card__body">
-                    <h2>Описание роли</h2>
-                    <div class="form-group">
-                        <label for="roleDescription" class="form-label">Опишите вашу роль и обязанности</label>
-                        <textarea id="roleDescription" class="form-control role-textarea" rows="6" placeholder="Например: Chief Product Officer (CPO) в IT компании с командой 100+ человек. Отвечаю за продуктовую стратегию, управление roadmap, координацию между командами разработки, дизайна и маркетинга..."></textarea>
-                    </div>
-                    <button id="analyzeBtn" class="btn btn--primary btn--full-width">
-                        <span class="btn-text">Анализировать роль и генерировать рекомендации</span>
-                        <span class="btn-loader hidden">Анализируем...</span>
+            <!-- API Key Section -->
+            <section class="api-section">
+                <h3>Настройка API</h3>
+                <div class="form-group">
+                    <label for="apiProvider" class="form-label">AI Провайдер</label>
+                    <select id="apiProvider" class="form-control">
+                        <option value="openai">OpenAI (требует VPN из России)</option>
+                        <option value="anthropic">Anthropic Claude (требует VPN)</option>
+                        <option value="gigachat">GigaChat (Сбер, работает в России)</option>
+                        <option value="yandexgpt">YandexGPT (работает в России)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="apiKey" class="form-label">API Ключ</label>
+                    <input type="password" id="apiKey" class="form-control" placeholder="Введите API ключ...">
+                    <small class="api-warning">⚠️ Не сохраняется, только для сессии</small>
+                    <button id="testApiBtn" class="btn btn-ghost" style="margin-top: 8px; width: 100%; font-size: 12px;">
+                        <span class="btn-text">Тест API соединения</span>
+                        <span class="btn-loader hidden">Тестируем...</span>
                     </button>
                 </div>
             </section>
 
-            <!-- Sample Roles -->
-            <section class="samples-section">
-                <h3>Примеры ролей:</h3>
-                <div class="sample-roles">
-                    <button class="sample-role-btn" data-role="Chief Product Officer (CPO) в IT компании с командой 100+ человек">CPO IT компании</button>
-                    <button class="sample-role-btn" data-role="Head of Marketing в e-commerce проекте">Head of Marketing</button>
-                    <button class="sample-role-btn" data-role="Руководитель отдела продаж B2B SaaS">Руководитель продаж B2B</button>
-                    <button class="sample-role-btn" data-role="CTO стартапа в финтех сфере">CTO финтех стартапа</button>
-                    <button class="sample-role-btn" data-role="Менеджер проектов в digital агентстве">PM digital агентства</button>
+            <!-- Role Input Section -->
+            <section class="role-section">
+                <h3>Описание роли</h3>
+                <div class="form-group">
+                    <label for="roleDescription" class="form-label">Опишите вашу роль и задачи</label>
+                    <textarea id="roleDescription" class="form-control role-textarea" rows="8" placeholder="Например: Chief Product Officer (CPO) в IT компании с командой 100+ человек. Отвечаю за продуктовую стратегию, управление roadmap, координацию между командами разработки, дизайна и маркетинга..."></textarea>
+                </div>
+                
+                <button id="analyzeBtn" class="btn btn-primary">
+                    <span class="btn-text">Сгенерировать рекомендации</span>
+                    <span class="btn-loader hidden">Анализируем...</span>
+                </button>
+                
+                <!-- Progress Bar for Generation -->
+                <div id="generationProgress" class="generation-progress hidden">
+                    <div class="progress-info">
+                        <span class="progress-icon">🤖</span>
+                        <span class="progress-text">Генерируем рекомендации...</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Results Section -->
-            <section id="resultsSection" class="results-section hidden">
-                <div class="results-header">
-                    <h2>Рекомендации по автоматизации</h2>
-                    <div class="results-actions">
-                        <span id="recommendationsCount" class="recommendations-count">0 рекомендаций</span>
-                        <button id="clearBtn" class="btn btn--secondary">Очистить результаты</button>
+            <!-- Analysis Results -->
+            <section id="analysisSection" class="analysis-section hidden">
+                <h3>Рекомендации по автоматизации</h3>
+                <div class="analysis-content">
+                    <div class="analysis-block">
+                        <h4>Анализ роли</h4>
+                        <div id="roleAnalysisContent" class="analysis-text"></div>
                     </div>
-                </div>
-
-                <!-- Role Analysis -->
-                <div id="roleAnalysis" class="role-analysis card">
-                    <div class="card__body">
-                        <h3>Анализ роли</h3>
-                        <div id="roleAnalysisContent"></div>
-                        <h4 class="best-practices-title">Лучшие практики</h4>
-                        <div id="bestPracticesContent"></div>
+                    <div class="analysis-block">
+                        <h4>Лучшие практики</h4>
+                        <div id="bestPracticesContent" class="analysis-text"></div>
                     </div>
-                </div>
-
-                <!-- Automation Cases -->
-                <div class="automation-cases">
-                    <h3>Рекомендуемые кейсы автоматизации</h3>
-                    <div id="automationGrid" class="automation-grid"></div>
-                    <div class="generate-more-section">
-                        <button id="generateMoreBtn" class="btn btn--secondary btn--generate-more hidden">
-                            <span class="btn-text">Сгенерируй еще 6 кейсов</span>
+                    <div class="analysis-actions">
+                        <button id="generateMoreBtn" class="btn btn-secondary hidden">
+                            <span class="btn-text">Сгенерировать еще 6 кейсов</span>
                             <span class="btn-loader hidden">Генерируем...</span>
                         </button>
+                        <button id="clearBtn" class="btn btn-ghost">Очистить результаты</button>
                     </div>
                 </div>
             </section>
-        </main>
+        </div>
+
+        <!-- Центральная колонка: Список кейсов -->
+        <div class="center-panel">
+            <div class="panel-header">
+                <h3>Кейсы автоматизации</h3>
+                <span id="casesCount" class="cases-count">0 кейсов</span>
+            </div>
+            <div id="casesList" class="cases-list">
+                <div class="empty-state">
+                    <div class="empty-icon">🤖</div>
+                    <p>Опишите вашу роль и нажмите "Сгенерировать рекомендации" чтобы увидеть кейсы автоматизации</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка: Детали кейса -->
+        <div class="right-panel">
+            <div class="panel-header">
+                <h3>Детали кейса</h3>
+            </div>
+            <div id="caseDetails" class="case-details">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>Выберите кейс из списка чтобы увидеть подробную информацию, пайплайн автоматизации и системный промпт</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal for System Prompt -->
@@ -100,8 +131,8 @@
                 <pre id="systemPromptContent" class="system-prompt-content"></pre>
             </div>
             <div class="modal-footer">
-                <button id="copyPrompt" class="btn btn--primary">Копировать промпт</button>
-                <button id="closeModalBtn" class="btn btn--secondary">Закрыть</button>
+                <button id="copyPrompt" class="btn btn-primary">Копировать промпт</button>
+                <button id="closeModalBtn" class="btn btn-secondary">Закрыть</button>
             </div>
         </div>
     </div>
@@ -112,6 +143,12 @@
         <p>Генерируем персонализированные рекомендации...</p>
     </div>
 
-    <script src="app.js?v=7"></script>
+    <!-- Messages Container -->
+    <div id="messagesContainer" class="messages-container"></div>
+
+    <script src="app.js?v=29"></script>
+    <script>
+        const app = new AIDelegate();
+    </script>
 </body>
 </html>
