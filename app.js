@@ -262,8 +262,16 @@ class AIDelegate {
         this.showMoreLoading(true);
         
         try {
-            const existingTitles = this.currentResults.automationCases.map(c => c.title);
-            const newRecommendations = await this.callAIForMore(roleDescription, existingTitles);
+            // Передаем полный контекст первой генерации
+            const contextData = {
+                roleDescription: roleDescription,
+                originalAnalysis: this.currentResults.roleAnalysis,
+                originalPractices: this.currentResults.bestPractices,
+                existingCases: this.currentResults.automationCases,
+                existingTitles: this.currentResults.automationCases.map(c => c.title)
+            };
+            
+            const newRecommendations = await this.callAIForMore(contextData);
             this.addMoreResults(newRecommendations);
         } catch (error) {
             console.error('Error generating more cases:', error);
@@ -290,6 +298,20 @@ class AIDelegate {
 
     async callOpenAI(roleDescription) {
         const systemPrompt = `Ты эксперт по автоматизации бизнес-процессов и внедрению AI агентов.
+
+ВАЖНО: Если в кейсе выбрана платформа Make, то для поля automationPipeline.steps сгенерируй такой пайплайн, чтобы его можно было преобразовать в рабочий Make.com Blueprint. 
+
+ИСПОЛЬЗУЙ АКТУАЛЬНЫЕ ПРИЛОЖЕНИЯ MAKE, НО НЕ ОГРАНИЧИВАЙСЯ ИМИ:
+AI: OpenAI (ChatGPT, Whisper, DALL-E), Anthropic Claude, ElevenLabs, Leonardo.ai, Cloudinary
+Productivity: Google Sheets, Google Calendar, ClickUp, Notion, AirTable  
+Marketing: Facebook Pages, Instagram for Business, Facebook Lead Ads, LinkedIn, Pinterest
+Communication: Telegram Bot, Gmail, Slack
+Task tracking: Jira
+Customer Support: Intercom, Zendesk, Freshdesk, Help Scout, Fresh Service
+E-commerce: WooCommerce
+Trending: Bluesky, ClickFunnels 2.0, Braze, Snapchat Campaign Management
+
+Каждый шаг должен соответствовать реальному модулю Make из списка выше (например, gmail:TriggerAction, openai:ActionModule, google-sheets:ActionModule и т.д.), с обязательными параметрами и метаданными. Все соединения между модулями должны быть явно указаны. Запрещено использовать абстрактные шаги или устаревшие приложения. Все параметры должны быть заполнены плейсхолдерами или примерными значениями.
 
 КРИТИЧЕСКИ ВАЖНО: Сосредоточься ТОЛЬКО на конкретных задачах, которые пользователь описал в своей роли. НЕ добавляй общие рекомендации или стандартные процессы, которые не упомянуты в описании роли.
 
@@ -325,27 +347,45 @@ class AIDelegate {
       "roiEstimate": "10-50%",
       "complexity": "низкая/средняя/высокая",
       "tools": ["конкретный инструмент 1", "конкретный инструмент 2"],
-      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями для ЭТОЙ КОНКРЕТНОЙ задачи из описания роли. Минимум 300 слов.",
+      "systemPrompt": "ПРАКТИЧЕСКИЙ промпт для решения ЭТОЙ КОНКРЕТНОЙ задачи. НЕ описывай роль агента, а дай четкие инструкции: ВХОДНЫЕ ДАННЫЕ (формат), АЛГОРИТМ ДЕЙСТВИЙ (пошагово), ВЫХОДНЫЕ ДАННЫЕ (формат), ПРИМЕРЫ использования, обработку EDGE CASES. Начинай с конкретного действия, а не 'Ты помощник...'. Минимум 400 слов.",
       "automationPipeline": {
         "platform": "Make/n8n",
         "steps": [
           {
             "step": 1,
-            "action": "Триггер для КОНКРЕТНОЙ задачи пользователя",
-            "tool": "Релевантный инструмент",
-            "description": "Краткое описание шага"
+            "action": "Триггер события (например: получение email, webhook)",
+            "tool": "Gmail/Webhook/ClickUp",
+            "description": "Инициация автоматизации при получении новых данных"
           },
           {
             "step": 2,
-            "action": "Обработка данных для этой задачи",
+            "action": "Первичная обработка и валидация данных",
             "tool": "OpenAI/Claude",
-            "description": "Краткое описание шага"
+            "description": "Анализ и проверка корректности входящих данных"
           },
           {
             "step": 3,
-            "action": "Результат выполнения задачи",
-            "tool": "Релевантный инструмент",
-            "description": "Краткое описание шага"
+            "action": "Обогащение данными из внешних источников",
+            "tool": "Google Sheets/Notion/AirTable",
+            "description": "Получение дополнительной информации из баз данных"
+          },
+          {
+            "step": 4,
+            "action": "Принятие решения или классификация",
+            "tool": "OpenAI/Claude",
+            "description": "Интеллектуальный анализ и выбор дальнейших действий"
+          },
+          {
+            "step": 5,
+            "action": "Выполнение целевого действия",
+            "tool": "Telegram Bot/Slack/LinkedIn/Gmail",
+            "description": "Реализация основной бизнес-логики автоматизации"
+          },
+          {
+            "step": 6,
+            "action": "Логирование и уведомление о результате",
+            "tool": "Google Sheets/Monday/Telegram",
+            "description": "Сохранение результата и отправка уведомлений"
           }
         ]
       }
@@ -353,7 +393,17 @@ class AIDelegate {
   ]
 }
 
-ВАЖНО: в пайплайне должно быть МИНИМУМ 3 шага, цепочка шагов должна полностью покрывать задачу
+КРИТИЧЕСКИ ВАЖНЫЕ ТРЕБОВАНИЯ К СИСТЕМНЫМ ПРОМПТАМ:
+- НЕ начинай с "Ты помощник/агент/AI для..." - это неправильно!
+- НАЧИНАЙ с конкретного действия: "Анализируй...", "Обрабатывай...", "Создавай..."
+- ЧЕТКИЙ АЛГОРИТМ: пошаговые инструкции что делать
+- ВХОДНЫЕ ДАННЫЕ: точный формат того, что поступает на вход
+- ВЫХОДНЫЕ ДАННЫЕ: точный формат результата с примерами
+- ПРИМЕРЫ: конкретные кейсы использования
+- EDGE CASES: как обрабатывать ошибки и исключения
+- КРИТЕРИИ КАЧЕСТВА: как оценить успешность выполнения
+
+ВАЖНО: в пайплайне должно быть 4-7 шагов (оптимально 5-6), чтобы полностью покрыть весь процесс автоматизации от триггера до результата с валидацией, обработкой данных, принятием решений и логированием
 ВАЖНО: В массиве automationCases должно быть РОВНО 6 элементов.
 ВАЖНО: Названия ВСЕХ кейсов должны начинаться со слова "агент" (например: "агент управления roadmap", "агент координации команд")
 
@@ -361,6 +411,10 @@ class AIDelegate {
 Если пользователь написал "управляю roadmap продукта", создай кейс "агент управления roadmap продукта".
 Если пользователь написал "координирую команды разработки", создай кейс "агент координации команд разработки".
 НЕ добавляй кейсы по email или CRM, если пользователь о них не упоминал.
+
+ПРИМЕРЫ ПРАВИЛЬНЫХ СИСТЕМНЫХ ПРОМПТОВ:
+❌ НЕПРАВИЛЬНО: "Ты помощник для управления задачами. Анализируй проекты и помогай команде..."
+✅ ПРАВИЛЬНО: "Анализируй входящие задачи и автоматически назначай исполнителей. ВХОДНЫЕ ДАННЫЕ: описание задачи, навыки команды, текущая загрузка. АЛГОРИТМ: 1) Определи требуемые навыки 2) Найди свободных участников 3) Сопоставь задачу с навыками 4) Назначь оптимального исполнителя..."
 
 АНАЛИЗИРУЕМАЯ РОЛЬ:
 ${roleDescription}`;
@@ -499,19 +553,61 @@ ${roleDescription}`;
         }
     }
 
-    async callOpenAIForMore(roleDescription, existingTitles) {
-        const systemPrompt = `Ты эксперт по автоматизации бизнес-процессов и внедрению AI агентов. Пользователь уже получил первый набор рекомендаций и хочет еще 6 ДОПОЛНИТЕЛЬНЫХ кейсов автоматизации.
+    async callOpenAIForMore(contextData) {
+        const { roleDescription, originalAnalysis, originalPractices, existingCases, existingTitles } = contextData;
+        
+        // Извлекаем конкретные задачи и инструменты из первых кейсов для анализа
+        const identifiedTasks = existingCases.map(c => c.description).join('; ');
+        const usedTools = [...new Set(existingCases.flatMap(c => c.tools))];
+        
+        const systemPrompt = `Ты эксперт по автоматизации бизнес-процессов и внедрению AI агентов. Пользователь уже получил первый набор из 6 кейсов автоматизации и хочет 6 ДОПОЛНИТЕЛЬНЫХ кейсов, которые ПРОДОЛЖАЮТ и УГЛУБЛЯЮТ автоматизацию ТОЙ ЖЕ РОЛИ.
 
-КОНТЕКСТ: Российский рынок, современные инструменты автоматизации (Zapier, UiPath, AI агенты), фокус на практическое применение и ROI.
+КОНТЕКСТ РОЛИ ПОЛЬЗОВАТЕЛЯ:
+${roleDescription}
 
-УЖЕ ПРЕДЛОЖЕННЫЕ КЕЙСЫ (НЕ ПОВТОРЯЙ ИХ):
-${existingTitles.map(title => `- ${title}`).join('\n')}
+ПРЕДЫДУЩИЙ АНАЛИЗ РОЛИ:
+${originalAnalysis}
 
-ИНСТРУКЦИИ:
-1. Сгенерируй 6 НОВЫХ кейсов автоматизации, которые НЕ дублируют уже предложенные
-2. Фокусируйся на более специализированных или менее приоритетных функциях
-3. Создай детальный системный промпт для каждого AI агента
-4. Рассмотри менее очевидные, но полезные процессы для автоматизации
+ПРЕДЫДУЩИЕ ЛУЧШИЕ ПРАКТИКИ:
+${originalPractices}
+
+УЖЕ РЕАЛИЗОВАННЫЕ КЕЙСЫ АВТОМАТИЗАЦИИ:
+${existingCases.map((c, i) => `${i+1}. ${c.title}: ${c.description}`).join('\n')}
+
+ИСПОЛЬЗУЕМЫЕ ИНСТРУМЕНТЫ В ПЕРВЫХ КЕЙСАХ:
+${usedTools.join(', ')}
+
+КРИТИЧЕСКИ ВАЖНАЯ ЗАДАЧА:
+Создай 6 НОВЫХ кейсов автоматизации, которые:
+1. ПРОДОЛЖАЮТ работу с ТОЙ ЖЕ РОЛЬЮ и теми же процессами
+2. УГЛУБЛЯЮТ автоматизацию уже выявленных задач  
+3. ПОКРЫВАЮТ аспекты роли, которые еще НЕ АВТОМАТИЗИРОВАНЫ
+4. ДОПОЛНЯЮТ уже созданные кейсы, создавая целостную экосистему автоматизации
+5. НЕ ДУБЛИРУЮТ уже предложенные решения
+
+СТРАТЕГИИ ДЛЯ НОВЫХ КЕЙСОВ:
+- Создать подзадачи для уже автоматизированных процессов
+- Автоматизировать промежуточные этапы между существующими кейсами
+- Добавить мониторинг и аналитику для существующих автоматизаций
+- Создать кейсы для обработки исключений и edge cases
+- Автоматизировать подготовительные или завершающие этапы процессов
+- Добавить интеграции между разными системами из роли
+
+ОБЯЗАТЕЛЬНЫЕ ТРЕБОВАНИЯ:
+- Все кейсы должны быть ПРЯМО СВЯЗАНЫ с исходным описанием роли
+- Использовать конкретные инструменты и системы, упомянутые пользователем
+- Создавать синергию с уже существующими кейсами
+- Названия должны начинаться со слова "агент"
+- 4-7 шагов в каждом пайплайне
+
+ИСПОЛЬЗУЙ ТОЛЬКО АКТУАЛЬНЫЕ ПРИЛОЖЕНИЯ MAKE:
+AI: OpenAI (ChatGPT, Whisper, DALL-E), Anthropic Claude, ElevenLabs, Leonardo.ai, Cloudinary
+Productivity: Google Sheets, Google Calendar, Monday, ClickUp, Notion, AirTable  
+Marketing: Facebook Pages, Instagram for Business, Facebook Lead Ads, LinkedIn, Pinterest
+Communication: Slack, Telegram Bot, Gmail
+Customer Support: Intercom, Zendesk, Freshdesk, Help Scout, Fresh Service
+E-commerce: WooCommerce
+Trending: Bluesky, ClickFunnels 2.0, Braze, Snapchat Campaign Management
 
 КРИТИЧЕСКИ ВАЖНО: Верни ТОЛЬКО валидный JSON, без дополнительного текста. Начни ответ сразу с {
 
@@ -519,49 +615,36 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
 {
   "automationCases": [
     {
-      "title": "конкретное название функции (НЕ ПОВТОРЯЮЩЕЕ УЖЕ ПРЕДЛОЖЕННЫЕ)",
-      "description": "подробное описание что именно автоматизируется",
-      "priority": "высокий/средний/низкий", 
-      "roiEstimate": "30-50%",
+      "title": "агент [конкретная подзадача или дополнительный аспект роли]",
+      "description": "детальное описание как этот кейс ДОПОЛНЯЕТ уже существующие и углубляет автоматизацию роли",
+      "priority": "высокий/средний/низкий",
+      "roiEstimate": "10-50%",
       "complexity": "низкая/средняя/высокая",
-      "tools": ["конкретный инструмент 1", "конкретный инструмент 2"],
-      "systemPrompt": "Детальный системный промпт для AI агента с конкретными инструкциями, форматом ответа и примерами. Минимум 200 слов.",
+      "tools": ["конкретные инструменты из роли"],
+      "systemPrompt": "ПРАКТИЧЕСКИЙ промпт для решения этой задачи. НЕ описывай роль, а дай четкие инструкции: ВХОДНЫЕ ДАННЫЕ, АЛГОРИТМ (пошагово), ВЫХОДНЫЕ ДАННЫЕ, ПРИМЕРЫ, EDGE CASES. Учитывай интеграцию с уже существующими автоматизациями. Начинай с действия, не с 'Ты агент...'. Минимум 400 слов.",
       "automationPipeline": {
         "platform": "Make/n8n",
         "steps": [
           {
             "step": 1,
-            "action": "Триггер (например: Получение email)",
-            "tool": "Gmail/Outlook",
-            "description": "Краткое описание шага"
+            "action": "Триггер события или интеграция с существующим кейсом",
+            "tool": "Актуальный инструмент",
+            "description": "Как этот шаг связан с ролью и существующими процессами"
           },
-          {
-            "step": 2,
-            "action": "Обработка данных",
-            "tool": "OpenAI/Claude",
-            "description": "Краткое описание шага"
-          }
+          // ... 4-7 шагов
         ]
       }
     }
   ]
 }
 
-ТРЕБОВАНИЯ К СИСТЕМНЫМ ПРОМПТАМ:
-- Конкретные, actionable инструкции
-- Формат входных и выходных данных
-- Примеры использования
-- Критерии качества результата
-- Обработка edge cases
+ПРИМЕРЫ ХОРОШИХ ДОПОЛНИТЕЛЬНЫХ КЕЙСОВ:
+- Если есть "агент создания отчетов" → добавить "агент валидации данных для отчетов"
+- Если есть "агент управления задачами" → добавить "агент мониторинга прогресса задач"
+- Если есть "агент коммуникации с клиентами" → добавить "агент анализа обратной связи клиентов"
 
-ТРЕБОВАНИЯ К ПАЙПЛАЙНАМ АВТОМАТИЗАЦИИ:
-- Используй платформы Make (Integromat) или n8n
-- 3-7 шагов в пайплайне
-- Конкретные триггеры и действия
-- Популярные интеграции (Gmail, Slack, Telegram, Google Sheets)
-- Реалистичная реализация без сложного кода
-
-Роль для анализа: ${roleDescription}`;
+НЕ ПОВТОРЯЙ ЭТИ КЕЙСЫ:
+${existingTitles.map(title => `- ${title}`).join('\n')}`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -578,7 +661,7 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
                     }
                 ],
                 temperature: 0.8,
-                max_tokens: 4000
+                max_tokens: 6000
             })
         });
 
@@ -622,199 +705,8 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
             console.error('JSON parse error for more cases:', parseError);
             console.error('Content that failed to parse:', content);
             
-            // Fallback: создадим дополнительные базовые кейсы
-            const fallbackResponse = {
-                automationCases: [
-                    {
-                        title: "Автоматизация отчетности",
-                        description: "Автоматическое создание еженедельных и месячных отчетов",
-                        priority: "средний",
-                        roiEstimate: "15-25%",
-                        complexity: "средняя",
-                        tools: ["Google Sheets API", "Power BI"],
-                        systemPrompt: "Ты помощник для автоматизации отчетности. Собирай данные из различных источников, анализируй тренды и создавай структурированные отчеты с ключевыми метриками.",
-                        automationPipeline: {
-                            platform: "Make",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Получение данных из Google Sheets",
-                                    tool: "Google Sheets API",
-                                    description: "Триггер при получении новых данных"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Анализ данных",
-                                    tool: "Power BI",
-                                    description: "Анализ данных и создание отчета"
-                                },
-                                {
-                                    step: 3,
-                                    action: "Отправка отчета",
-                                    tool: "Email",
-                                    description: "Отправка отчета на email руководителя"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        title: "Автоматизация социальных сетей",
-                        description: "Планирование и публикация контента в социальных сетях",
-                        priority: "низкий",
-                        roiEstimate: "10-20%",
-                        complexity: "низкая",
-                        tools: ["Buffer", "Telegram Bot API"],
-                        systemPrompt: "Ты помощник для управления социальными сетями. Создавай контент-план, планируй публикации и анализируй эффективность постов.",
-                        automationPipeline: {
-                            platform: "Make",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Создание контента",
-                                    tool: "OpenAI",
-                                    description: "Генерация постов для соцсетей"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Планирование публикации",
-                                    tool: "Buffer",
-                                    description: "Автоматическая публикация в соцсети"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        title: "Автоматизация обработки документов",
-                        description: "Автоматическое извлечение и обработка данных из документов",
-                        priority: "средний",
-                        roiEstimate: "25-35%",
-                        complexity: "высокая",
-                        tools: ["OCR API", "Google Drive API"],
-                        systemPrompt: "Ты помощник для обработки документов. Извлекай текст из PDF, анализируй содержимое и структурируй данные.",
-                        automationPipeline: {
-                            platform: "n8n",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Получение документа",
-                                    tool: "Google Drive",
-                                    description: "Триггер при загрузке нового документа"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Извлечение текста",
-                                    tool: "OCR API",
-                                    description: "Распознавание текста в документе"
-                                },
-                                {
-                                    step: 3,
-                                    action: "Обработка данных",
-                                    tool: "OpenAI",
-                                    description: "Структурирование извлеченных данных"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        title: "Автоматизация backup данных",
-                        description: "Регулярное резервное копирование важных данных",
-                        priority: "высокий",
-                        roiEstimate: "40-60%",
-                        complexity: "средняя",
-                        tools: ["Google Drive API", "Yandex.Disk API"],
-                        systemPrompt: "Ты помощник для резервного копирования. Следи за важными файлами, создавай бэкапы и уведомляй о статусе операций.",
-                        automationPipeline: {
-                            platform: "Make",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Проверка файлов",
-                                    tool: "File System",
-                                    description: "Ежедневная проверка изменений"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Создание бэкапа",
-                                    tool: "Google Drive",
-                                    description: "Загрузка измененных файлов"
-                                },
-                                {
-                                    step: 3,
-                                    action: "Уведомление",
-                                    tool: "Telegram",
-                                    description: "Отчет о статусе бэкапа"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        title: "Автоматизация мониторинга конкурентов",
-                        description: "Отслеживание цен и новостей конкурентов",
-                        priority: "низкий",
-                        roiEstimate: "15-30%",
-                        complexity: "средняя",
-                        tools: ["Web Scraping", "RSS Parser"],
-                        systemPrompt: "Ты помощник для мониторинга конкурентов. Отслеживай изменения цен, новые продукты и новости компаний-конкурентов.",
-                        automationPipeline: {
-                            platform: "n8n",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Сбор данных с сайтов",
-                                    tool: "Web Scraper",
-                                    description: "Ежедневный парсинг сайтов конкурентов"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Анализ изменений",
-                                    tool: "OpenAI",
-                                    description: "Выявление значимых изменений"
-                                },
-                                {
-                                    step: 3,
-                                    action: "Отправка отчета",
-                                    tool: "Slack",
-                                    description: "Уведомление команды об изменениях"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        title: "Автоматизация инвентаризации",
-                        description: "Учет и контроль материальных ценностей",
-                        priority: "средний",
-                        roiEstimate: "20-35%",
-                        complexity: "низкая",
-                        tools: ["QR Scanner", "Google Sheets"],
-                        systemPrompt: "Ты помощник для управления инвентарем. Отслеживай движение товаров, контролируй остатки и планируй закупки.",
-                        automationPipeline: {
-                            platform: "Make",
-                            steps: [
-                                {
-                                    step: 1,
-                                    action: "Сканирование QR-кода",
-                                    tool: "QR Scanner",
-                                    description: "Считывание информации о товаре"
-                                },
-                                {
-                                    step: 2,
-                                    action: "Обновление базы",
-                                    tool: "Google Sheets",
-                                    description: "Запись данных в таблицу"
-                                },
-                                {
-                                    step: 3,
-                                    action: "Проверка остатков",
-                                    tool: "OpenAI",
-                                    description: "Анализ необходимости докупки"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            };
-            
-            return fallbackResponse;
+            // Используем улучшенный fallback с контекстом
+            return this.getContextualFallbackMoreResponse(existingCases, roleDescription);
         }
     }
 
@@ -1223,7 +1115,7 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        this.showSuccess(`${platform} workflow JSON скачан`);
+        this.showSuccess(`${platform} workflow JSON скачан ✅ (обновлен список актуальных приложений)`);
     }
 
     generateMakeWorkflow(caseItem) {
@@ -1233,25 +1125,86 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         const modules = steps.map((step, index) => {
             const moduleId = index + 1;
             
-            // Определяем тип модуля на основе инструмента
+            // Определяем тип модуля на основе инструмента (актуальные apps из Make)
             let moduleType = 'custom';
             let appName = step.tool.toLowerCase();
             
-            if (appName.includes('gmail') || appName.includes('email')) {
+            // AI приложения
+            if (appName.includes('openai') || appName.includes('gpt') || appName.includes('chatgpt')) {
+                moduleType = 'openai';
+                appName = 'openai';
+            } else if (appName.includes('claude') || appName.includes('anthropic')) {
+                moduleType = 'anthropic-claude';
+                appName = 'anthropic-claude';
+            } else if (appName.includes('elevenlabs')) {
+                moduleType = 'elevenlabs';
+                appName = 'elevenlabs';
+            } else if (appName.includes('leonardo')) {
+                moduleType = 'leonardo-ai';
+                appName = 'leonardo-ai';
+            } 
+            // Email и Gmail
+            else if (appName.includes('gmail') || appName.includes('email')) {
                 moduleType = 'gmail';
                 appName = 'gmail';
-            } else if (appName.includes('openai') || appName.includes('gpt')) {
-                moduleType = 'openai-gpt-3';
-                appName = 'openai-gpt-3';
+            }
+            // Productivity приложения
+            else if (appName.includes('google sheets') || appName.includes('sheets')) {
+                moduleType = 'google-sheets';
+                appName = 'google-sheets';
+            } else if (appName.includes('google calendar') || appName.includes('calendar')) {
+                moduleType = 'google-calendar';
+                appName = 'google-calendar';
+            } else if (appName.includes('clickup')) {
+                moduleType = 'clickup';
+                appName = 'clickup';
+            } else if (appName.includes('notion')) {
+                moduleType = 'notion';
+                appName = 'notion';
+            } else if (appName.includes('airtable')) {
+                moduleType = 'airtable';
+                appName = 'airtable';
+            }
+            // Коммуникации
+            else if (appName.includes('slack')) {
+                moduleType = 'slack';
+                appName = 'slack';
             } else if (appName.includes('telegram')) {
                 moduleType = 'telegram-bot';
                 appName = 'telegram-bot';
-            } else if (appName.includes('google')) {
-                moduleType = 'google-sheets';
-                appName = 'google-sheets';
-            } else if (appName.includes('slack')) {
-                moduleType = 'slack';
-                appName = 'slack';
+            }
+            // Маркетинг
+            else if (appName.includes('facebook')) {
+                moduleType = 'facebook-pages';
+                appName = 'facebook-pages';
+            } else if (appName.includes('instagram')) {
+                moduleType = 'instagram-for-business';
+                appName = 'instagram-for-business';
+            } else if (appName.includes('linkedin')) {
+                moduleType = 'linkedin';
+                appName = 'linkedin';
+            } else if (appName.includes('pinterest')) {
+                moduleType = 'pinterest';
+                appName = 'pinterest';
+            }
+            // Customer Support
+            else if (appName.includes('intercom')) {
+                moduleType = 'intercom';
+                appName = 'intercom';
+            } else if (appName.includes('zendesk')) {
+                moduleType = 'zendesk';
+                appName = 'zendesk';
+            } else if (appName.includes('freshdesk')) {
+                moduleType = 'freshdesk';
+                appName = 'freshdesk';
+            } else if (appName.includes('help scout')) {
+                moduleType = 'help-scout';
+                appName = 'help-scout';
+            }
+            // E-commerce
+            else if (appName.includes('woocommerce')) {
+                moduleType = 'woocommerce';
+                appName = 'woocommerce';
             }
             
             return {
@@ -1337,26 +1290,58 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
             const nodeId = `node${index}`;
             const position = [200 + (index * 300), 200];
             
-            // Определяем тип узла на основе инструмента
+            // Определяем тип узла на основе инструмента (актуальные n8n узлы)
             let nodeType = 'n8n-nodes-base.httpRequest';
             let nodeName = step.tool;
             
-            if (step.tool.toLowerCase().includes('gmail') || step.tool.toLowerCase().includes('email')) {
-                nodeType = 'n8n-nodes-base.gmail';
-                nodeName = 'Gmail';
-            } else if (step.tool.toLowerCase().includes('openai') || step.tool.toLowerCase().includes('gpt')) {
+            // AI узлы
+            if (step.tool.toLowerCase().includes('openai') || step.tool.toLowerCase().includes('gpt') || step.tool.toLowerCase().includes('chatgpt')) {
                 nodeType = 'n8n-nodes-base.openAi';
                 nodeName = 'OpenAI';
+            } else if (step.tool.toLowerCase().includes('claude') || step.tool.toLowerCase().includes('anthropic')) {
+                nodeType = 'n8n-nodes-base.anthropic';
+                nodeName = 'Anthropic Claude';
+            }
+            // Email
+            else if (step.tool.toLowerCase().includes('gmail') || step.tool.toLowerCase().includes('email')) {
+                nodeType = 'n8n-nodes-base.gmail';
+                nodeName = 'Gmail';
+            }
+            // Productivity
+            else if (step.tool.toLowerCase().includes('google sheets') || step.tool.toLowerCase().includes('sheets')) {
+                nodeType = 'n8n-nodes-base.googleSheets';
+                nodeName = 'Google Sheets';
+            } else if (step.tool.toLowerCase().includes('google calendar') || step.tool.toLowerCase().includes('calendar')) {
+                nodeType = 'n8n-nodes-base.googleCalendar';
+                nodeName = 'Google Calendar';
+            } else if (step.tool.toLowerCase().includes('clickup')) {
+                nodeType = 'n8n-nodes-base.clickUp';
+                nodeName = 'ClickUp';
+            } else if (step.tool.toLowerCase().includes('notion')) {
+                nodeType = 'n8n-nodes-base.notion';
+                nodeName = 'Notion';
+            } else if (step.tool.toLowerCase().includes('airtable')) {
+                nodeType = 'n8n-nodes-base.airtable';
+                nodeName = 'Airtable';
+            }
+            // Communication
+            else if (step.tool.toLowerCase().includes('slack')) {
+                nodeType = 'n8n-nodes-base.slack';
+                nodeName = 'Slack';
             } else if (step.tool.toLowerCase().includes('telegram')) {
                 nodeType = 'n8n-nodes-base.telegram';
                 nodeName = 'Telegram';
-            } else if (step.tool.toLowerCase().includes('google sheets')) {
-                nodeType = 'n8n-nodes-base.googleSheets';
-                nodeName = 'Google Sheets';
-            } else if (step.tool.toLowerCase().includes('slack')) {
-                nodeType = 'n8n-nodes-base.slack';
-                nodeName = 'Slack';
-            } else if (step.tool.toLowerCase().includes('webhook') || index === 0) {
+            }
+            // Marketing
+            else if (step.tool.toLowerCase().includes('facebook')) {
+                nodeType = 'n8n-nodes-base.facebook';
+                nodeName = 'Facebook';
+            } else if (step.tool.toLowerCase().includes('linkedin')) {
+                nodeType = 'n8n-nodes-base.linkedIn';
+                nodeName = 'LinkedIn';
+            }
+            // Default
+            else if (step.tool.toLowerCase().includes('webhook') || index === 0) {
                 nodeType = 'n8n-nodes-base.webhook';
                 nodeName = 'Webhook';
             }
@@ -1678,16 +1663,16 @@ ${JSON.stringify(workflowJSON, null, 2)}
         apiKeyInput.placeholder = placeholders[this.apiProvider] || 'Введите API ключ...';
     }
 
-    async callAIForMore(roleDescription, existingTitles) {
+    async callAIForMore(contextData) {
         switch (this.apiProvider) {
             case 'openai':
-                return await this.callOpenAIForMore(roleDescription, existingTitles);
+                return await this.callOpenAIForMore(contextData);
             case 'anthropic':
-                return await this.callClaudeForMore(roleDescription, existingTitles);
+                return await this.callClaudeForMore(contextData);
             case 'gigachat':
-                return await this.callGigaChatForMore(roleDescription, existingTitles);
+                return await this.callGigaChatForMore(contextData);
             case 'yandexgpt':
-                return await this.callYandexGPTForMore(roleDescription, existingTitles);
+                return await this.callYandexGPTForMore(contextData);
             default:
                 throw new Error('Неподдерживаемый AI провайдер');
         }
@@ -1711,19 +1696,19 @@ ${JSON.stringify(workflowJSON, null, 2)}
         return this.getFallbackResponse();
     }
 
-    async callClaudeForMore(roleDescription, existingTitles) {
+    async callClaudeForMore(contextData) {
         console.log('Claude API не реализован, используем fallback');
-        return this.getFallbackMoreResponse();
+        return this.getContextualFallbackMoreResponse(contextData.existingCases, contextData.roleDescription);
     }
 
-    async callGigaChatForMore(roleDescription, existingTitles) {
+    async callGigaChatForMore(contextData) {
         console.log('GigaChat API не реализован, используем fallback');
-        return this.getFallbackMoreResponse();
+        return this.getContextualFallbackMoreResponse(contextData.existingCases, contextData.roleDescription);
     }
 
-    async callYandexGPTForMore(roleDescription, existingTitles) {
+    async callYandexGPTForMore(contextData) {
         console.log('YandexGPT API не реализован, используем fallback');
-        return this.getFallbackMoreResponse();
+        return this.getContextualFallbackMoreResponse(contextData.existingCases, contextData.roleDescription);
     }
 
     getFallbackResponse() {
@@ -1737,8 +1722,8 @@ ${JSON.stringify(workflowJSON, null, 2)}
                     priority: "высокий",
                     roiEstimate: "20-30%",
                     complexity: "низкая",
-                    tools: ["Zapier", "Gmail API"],
-                    systemPrompt: "Ты помощник для автоматизации email-коммуникаций. Анализируй входящие письма и предлагай подходящие ответы. Сортируй письма по приоритету и создавай краткие сводки для руководителя.",
+                    tools: ["Make", "Gmail"],
+                    systemPrompt: "Анализируй входящие email и генерируй персонализированные ответы. ВХОДНЫЕ ДАННЫЕ: текст письма, данные отправителя, история переписки. АЛГОРИТМ: 1) Определи тему и тон письма 2) Классифицируй приоритет (высокий/средний/низкий) 3) Проверь историю общения 4) Создай подходящий ответ или переадресуй 5) Сформируй краткую сводку для руководителя. ВЫХОДНЫЕ ДАННЫЕ: JSON с приоритетом, темой, предлагаемым ответом, действиями. ПРИМЕРЫ: жалоба клиента → извинение + решение, партнерский запрос → вежливая переадресация. EDGE CASES: спам (игнорировать), срочные вопросы (немедленное уведомление), неопознанный язык (использовать переводчик).",
                     automationPipeline: {
                         platform: "Make",
                         steps: [
@@ -1756,8 +1741,20 @@ ${JSON.stringify(workflowJSON, null, 2)}
                             },
                             {
                                 step: 3,
+                                action: "Проверка контекста отправителя",
+                                tool: "Google Sheets",
+                                description: "Поиск дополнительной информации об отправителе"
+                            },
+                            {
+                                step: 4,
+                                action: "Генерация ответа или уведомления",
+                                tool: "OpenAI",
+                                description: "Создание подходящего ответа на основе анализа"
+                            },
+                            {
+                                step: 5,
                                 action: "Отправка уведомления",
-                                tool: "Telegram",
+                                tool: "Telegram Bot",
                                 description: "Уведомление в Telegram о важном письме"
                             }
                         ]
@@ -1769,25 +1766,37 @@ ${JSON.stringify(workflowJSON, null, 2)}
                     priority: "средний",
                     roiEstimate: "15-25%",
                     complexity: "средняя",
-                    tools: ["Calendly", "Google Calendar API"],
-                    systemPrompt: "Ты помощник для планирования встреч. Анализируй календари участников, предлагай оптимальное время и автоматически отправляй приглашения.",
+                    tools: ["Make", "Google Calendar"],
+                    systemPrompt: "Координируй планирование встреч с автоматическим поиском оптимального времени. ВХОДНЫЕ ДАННЫЕ: список участников, длительность встречи, предпочтительные временные рамки, приоритет встречи. АЛГОРИТМ: 1) Получи календари всех участников 2) Найди пересечения свободного времени 3) Учти часовые пояса и рабочие часы 4) Выбери лучший слот по критериям 5) Создай событие и отправь приглашения. ВЫХОДНЫЕ ДАННЫЕ: JSON с предложенным временем, статусом участников, ссылкой на встречу. ПРИМЕРЫ: команда из 5 человек → поиск 1ч слота на следующей неделе. EDGE CASES: нет общего времени (предложить альтернативы), участник в отпуске (исключить), конфликт приоритетов (эскалация).",
                     automationPipeline: {
                         platform: "Make",
                         steps: [
                             {
                                 step: 1,
+                                action: "Получение запроса на встречу",
+                                tool: "Gmail",
+                                description: "Триггер при получении email с запросом встречи"
+                            },
+                            {
+                                step: 2,
                                 action: "Анализ доступности участников",
                                 tool: "Google Calendar",
                                 description: "Проверка свободного времени в календарях"
                             },
                             {
-                                step: 2,
+                                step: 3,
                                 action: "Поиск оптимального времени",
                                 tool: "OpenAI",
                                 description: "Алгоритм поиска лучшего времени"
                             },
                             {
-                                step: 3,
+                                step: 4,
+                                action: "Создание события в календаре",
+                                tool: "Google Calendar",
+                                description: "Автоматическое создание встречи"
+                            },
+                            {
+                                step: 5,
                                 action: "Отправка приглашений",
                                 tool: "Gmail",
                                 description: "Автоматическая рассылка приглашений"
@@ -1801,8 +1810,8 @@ ${JSON.stringify(workflowJSON, null, 2)}
                     priority: "высокий",
                     roiEstimate: "25-40%",
                     complexity: "высокая",
-                    tools: ["Google Sheets", "Power BI"],
-                    systemPrompt: "Ты помощник для создания отчетов. Собирай данные из различных источников, анализируй показатели и создавай структурированные отчеты с ключевыми метриками и выводами.",
+                    tools: ["Google Sheets", "Make"],
+                    systemPrompt: "Генерируй структурированные отчеты с автоматическим анализом данных и выводами. ВХОДНЫЕ ДАННЫЕ: таблицы с метриками, временной период, цели отчета, аудитория. АЛГОРИТМ: 1) Собери данные из всех источников 2) Проверь качество и полноту данных 3) Рассчитай ключевые показатели и тренды 4) Выяви аномалии и важные изменения 5) Создай выводы и рекомендации 6) Оформи в структурированный отчет. ВЫХОДНЫЕ ДАННЫЕ: PDF отчет с графиками, таблицами, выводами и рекомендациями. ПРИМЕРЫ: месячный отчет по продажам с анализом конверсии. EDGE CASES: неполные данные (указать ограничения), резкие изменения (пометить как требующие внимания), технические ошибки (альтернативные источники).",
                     automationPipeline: {
                         platform: "n8n",
                         steps: [
@@ -1833,15 +1842,15 @@ ${JSON.stringify(workflowJSON, null, 2)}
                     priority: "средний",
                     roiEstimate: "20-35%",
                     complexity: "средняя",
-                    tools: ["Trello", "Slack API"],
-                    systemPrompt: "Ты помощник для управления задачами. Анализируй загрузку команды, приоритеты проектов и автоматически распределяй задачи между участниками с учетом их компетенций.",
+                    tools: ["ClickUp", "Telegram"],
+                    systemPrompt: "Распределяй задачи между участниками команды на основе загрузки и компетенций. ВХОДНЫЕ ДАННЫЕ: новая задача, профили участников команды, текущая загрузка, компетенции, приоритеты проектов. АЛГОРИТМ: 1) Проанализируй требования задачи 2) Определи необходимые навыки 3) Оцени загруженность каждого участника 4) Сопоставь навыки с требованиями 5) Выбери оптимального исполнителя 6) Назначь задачу и установи дедлайн. ВЫХОДНЫЕ ДАННЫЕ: JSON с назначенным исполнителем, обоснованием выбора, приоритетом, дедлайном. ПРИМЕРЫ: фронтенд задача → разработчик React с наименьшей загрузкой. EDGE CASES: все заняты (эскалация), нет подходящих навыков (запрос на обучение), критическая задача (перераспределение приоритетов).",
                     automationPipeline: {
                         platform: "Make",
                         steps: [
                             {
                                 step: 1,
                                 action: "Получение новой задачи",
-                                tool: "Trello",
+                                tool: "ClickUp",
                                 description: "Триггер при создании новой карточки"
                             },
                             {
@@ -1853,7 +1862,7 @@ ${JSON.stringify(workflowJSON, null, 2)}
                             {
                                 step: 3,
                                 action: "Уведомление команды",
-                                tool: "Slack",
+                                tool: "Telegram",
                                 description: "Отправка уведомления в канал"
                             }
                         ]
@@ -1866,7 +1875,7 @@ ${JSON.stringify(workflowJSON, null, 2)}
                     roiEstimate: "15-30%",
                     complexity: "высокая",
                     tools: ["Jira", "GitHub API"],
-                    systemPrompt: "Ты помощник для контроля качества. Анализируй выполненные задачи, проверяй соответствие стандартам и автоматически создавай отчеты о качестве работы команды.",
+                    systemPrompt: "Контролируй качество выполненных задач и генерируй отчеты о соответствии стандартам. ВХОДНЫЕ ДАННЫЕ: завершенные задачи, чеклисты качества, стандарты команды, код-ревью, метрики. АЛГОРИТМ: 1) Проверь соответствие техническим требованиям 2) Оцени качество кода/документации 3) Проверь покрытие тестами 4) Сравни с стандартами команды 5) Выяви проблемные области 6) Создай рекомендации по улучшению. ВЫХОДНЫЕ ДАННЫЕ: отчет с оценкой качества, списком проблем, рекомендациями, трендами по времени. ПРИМЕРЫ: код не соответствует стайл-гайду → рекомендация по рефакторингу. EDGE CASES: субъективные критерии (привлечь экспертов), технические ограничения (документировать исключения), критические баги (немедленная эскалация).",
                     automationPipeline: {
                         platform: "n8n",
                         steps: [
@@ -2080,7 +2089,7 @@ ${JSON.stringify(workflowJSON, null, 2)}
                             {
                                 step: 3,
                                 action: "Отправка отчета",
-                                tool: "Slack",
+                                tool: "Telegram",
                                 description: "Уведомление команды об изменениях"
                             }
                         ]
@@ -2196,6 +2205,287 @@ ${JSON.stringify(workflowJSON, null, 2)}
         }
         
         return `case-${Math.abs(hash)}-${index}`;
+    }
+
+    getContextualFallbackMoreResponse(existingCases, roleDescription) {
+        // Анализируем уже существующие кейсы для создания связанных дополнений
+        const usedTools = [...new Set(existingCases.flatMap(c => c.tools))];
+        const existingTitles = existingCases.map(c => c.title);
+        
+        return {
+            automationCases: [
+                {
+                    title: "агент валидации и контроля качества данных",
+                    description: "Проверка целостности и качества данных во всех автоматизированных процессах для предотвращения ошибок",
+                    priority: "высокий",
+                    roiEstimate: "25-40%",
+                    complexity: "средняя",
+                    tools: usedTools.slice(0, 3),
+                    systemPrompt: `Валидируй входящие данные и предотвращай ошибки в автоматизированных процессах. ВХОДНЫЕ ДАННЫЕ: таблицы, формы, API запросы, файлы в форматах CSV/JSON/XML. АЛГОРИТМ: 1) Проверь полноту обязательных полей 2) Валидируй форматы (email, телефон, даты) 3) Проверь бизнес-правила (лимиты, ограничения) 4) Найди дубликаты и аномалии 5) Создай отчет с ошибками и рекомендациями. ВЫХОДНЫЕ ДАННЫЕ: JSON с результатом валидации, списком ошибок, статистикой качества. ПРИМЕРЫ: email без @ → ошибка формата, отрицательная цена → нарушение бизнес-правил. EDGE CASES: неизвестный формат (запросить спецификацию), массовые ошибки (остановить процесс), критические данные (двойная проверка).`,
+                    automationPipeline: {
+                        platform: "Make",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Мониторинг входящих данных",
+                                tool: "Google Sheets",
+                                description: "Отслеживание новых записей в системах"
+                            },
+                            {
+                                step: 2,
+                                action: "Валидация по правилам",
+                                tool: "OpenAI",
+                                description: "Проверка данных на соответствие бизнес-логике"
+                            },
+                            {
+                                step: 3,
+                                action: "Проверка дубликатов",
+                                tool: "Google Sheets",
+                                description: "Поиск повторяющихся записей"
+                            },
+                            {
+                                step: 4,
+                                action: "Формирование отчета о качестве",
+                                tool: "OpenAI",
+                                description: "Создание детального отчета о найденных проблемах"
+                            },
+                            {
+                                step: 5,
+                                action: "Уведомление о проблемах",
+                                tool: "Telegram Bot",
+                                description: "Отправка срочных уведомлений при критических ошибках"
+                            }
+                        ]
+                    }
+                },
+                {
+                    title: "агент мониторинга и аналитики автоматизаций",
+                    description: "Отслеживание эффективности всех автоматизированных процессов и предоставление аналитических отчетов для оптимизации",
+                    priority: "средний",
+                    roiEstimate: "20-35%",
+                    complexity: "высокая",
+                    tools: ["Google Sheets", "OpenAI", "Slack"],
+                    systemPrompt: `Мониторь KPI автоматизированных процессов и создавай аналитические отчеты. ВХОДНЫЕ ДАННЫЕ: логи выполнения, метрики времени, количество ошибок, объемы данных, пользовательская активность. АЛГОРИТМ: 1) Собери метрики за период 2) Рассчитай KPI (время выполнения, success rate, throughput) 3) Выяви тренды и аномалии 4) Сравни с прошлыми периодами 5) Определи узкие места 6) Создай рекомендации по оптимизации. ВЫХОДНЫЕ ДАННЫЕ: дашборд с графиками, таблица KPI, список рекомендаций, приоритизированный план улучшений. ПРИМЕРЫ: увеличение времени обработки на 20% → исследовать нагрузку. EDGE CASES: нет данных (указать ограничения), резкие изменения (требуют внимания), системные сбои (исключить из анализа).`,
+                    automationPipeline: {
+                        platform: "n8n",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Сбор метрик из систем",
+                                tool: "Google Sheets",
+                                description: "Агрегация данных о работе автоматизаций"
+                            },
+                            {
+                                step: 2,
+                                action: "Анализ производительности",
+                                tool: "OpenAI",
+                                description: "Выявление трендов и аномалий в работе"
+                            },
+                            {
+                                step: 3,
+                                action: "Создание дашборда",
+                                tool: "Google Sheets",
+                                description: "Визуализация ключевых показателей"
+                            },
+                            {
+                                step: 4,
+                                action: "Генерация рекомендаций",
+                                tool: "OpenAI",
+                                description: "Предложения по улучшению процессов"
+                            },
+                            {
+                                step: 5,
+                                action: "Отправка еженедельного отчета",
+                                tool: "Slack",
+                                description: "Автоматическая рассылка аналитики команде"
+                            }
+                        ]
+                    }
+                },
+                {
+                    title: "агент обработки исключительных ситуаций",
+                    description: "Автоматическая обработка ошибок и исключений во всех автоматизированных процессах с эскалацией к человеку при необходимости",
+                    priority: "высокий",
+                    roiEstimate: "30-45%",
+                    complexity: "высокая",
+                    tools: ["OpenAI", "Telegram Bot", "Gmail"],
+                    systemPrompt: `Ты специализированный агент для обработки исключений в контексте роли: ${roleDescription}. Отслеживай все ошибки и сбои в автоматизированных процессах, классифицируй их по критичности, пытайся автоматически восстановить работу системы. Для критических ошибок немедленно уведомляй ответственных сотрудников с детальным описанием проблемы и предлагаемыми решениями. Ведей журнал всех инцидентов для анализа паттернов сбоев.`,
+                    automationPipeline: {
+                        platform: "Make",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Мониторинг ошибок в системах",
+                                tool: "Gmail",
+                                description: "Получение уведомлений об ошибках"
+                            },
+                            {
+                                step: 2,
+                                action: "Классификация критичности",
+                                tool: "OpenAI",
+                                description: "Определение серьезности проблемы"
+                            },
+                            {
+                                step: 3,
+                                action: "Попытка автоматического решения",
+                                tool: "OpenAI",
+                                description: "Поиск и применение известных решений"
+                            },
+                            {
+                                step: 4,
+                                action: "Эскалация критических ошибок",
+                                tool: "Telegram Bot",
+                                description: "Срочное уведомление ответственных"
+                            },
+                            {
+                                step: 5,
+                                action: "Логирование инцидента",
+                                tool: "Google Sheets",
+                                description: "Запись в журнал для последующего анализа"
+                            }
+                        ]
+                    }
+                },
+                {
+                    title: "агент интеграции между системами",
+                    description: "Обеспечение бесшовной передачи данных между различными инструментами и платформами, используемыми в роли",
+                    priority: "средний",
+                    roiEstimate: "25-40%",
+                    complexity: "высокая",
+                    tools: usedTools,
+                    systemPrompt: `Ты агент интеграции для роли: ${roleDescription}. Обеспечиваешь синхронизацию данных между различными системами, преобразуешь форматы данных для совместимости, отслеживаешь целостность информации при передаче. Автоматически сопоставляешь поля между системами, разрешаешь конфликты данных, ведешь журнал всех операций интеграции. При возникновении проблем совместимости предлагаешь альтернативные способы передачи данных.`,
+                    automationPipeline: {
+                        platform: "n8n",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Мониторинг изменений в системе A",
+                                tool: usedTools[0] || "Google Sheets",
+                                description: "Отслеживание обновлений данных"
+                            },
+                            {
+                                step: 2,
+                                action: "Трансформация данных",
+                                tool: "OpenAI",
+                                description: "Преобразование формата для системы B"
+                            },
+                            {
+                                step: 3,
+                                action: "Валидация совместимости",
+                                tool: "OpenAI",
+                                description: "Проверка корректности преобразования"
+                            },
+                            {
+                                step: 4,
+                                action: "Синхронизация с системой B",
+                                tool: usedTools[1] || "ClickUp",
+                                description: "Передача данных в целевую систему"
+                            },
+                            {
+                                step: 5,
+                                action: "Подтверждение целостности",
+                                tool: "OpenAI",
+                                description: "Проверка успешности операции"
+                            },
+                            {
+                                step: 6,
+                                action: "Логирование операции",
+                                tool: "Google Sheets",
+                                description: "Запись в журнал интеграций"
+                            }
+                        ]
+                    }
+                },
+                {
+                    title: "агент обучения и адаптации процессов",
+                    description: "Анализ паттернов использования автоматизаций и автоматическая оптимизация процессов на основе накопленного опыта",
+                    priority: "низкий",
+                    roiEstimate: "15-30%",
+                    complexity: "высокая",
+                    tools: ["OpenAI", "Google Sheets", "Notion"],
+                    systemPrompt: `Ты агент машинного обучения для роли: ${roleDescription}. Анализируешь историю выполнения автоматизированных процессов, выявляешь закономерности в поведении пользователей, оптимизируешь параметры работы систем. Предлагаешь улучшения на основе анализа данных, создаешь рекомендации по настройке процессов, автоматически адаптируешь параметры автоматизаций под изменяющиеся условия работы.`,
+                    automationPipeline: {
+                        platform: "Make",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Сбор данных о использовании",
+                                tool: "Google Sheets",
+                                description: "Агрегация истории операций"
+                            },
+                            {
+                                step: 2,
+                                action: "Анализ паттернов поведения",
+                                tool: "OpenAI",
+                                description: "Выявление закономерностей в данных"
+                            },
+                            {
+                                step: 3,
+                                action: "Генерация предложений по улучшению",
+                                tool: "OpenAI",
+                                description: "Создание рекомендаций по оптимизации"
+                            },
+                            {
+                                step: 4,
+                                action: "Документирование улучшений",
+                                tool: "Notion",
+                                description: "Сохранение предложений в базе знаний"
+                            },
+                            {
+                                step: 5,
+                                action: "Уведомление о возможностях оптимизации",
+                                tool: "Slack",
+                                description: "Информирование команды о найденных улучшениях"
+                            }
+                        ]
+                    }
+                },
+                {
+                    title: "агент планирования и расписания автоматизаций",
+                    description: "Интеллектуальное управление расписанием выполнения всех автоматизированных процессов с учетом приоритетов и ресурсов",
+                    priority: "средний",
+                    roiEstimate: "20-35%",
+                    complexity: "средняя",
+                    tools: ["Google Calendar", "OpenAI", "Telegram Bot"],
+                    systemPrompt: `Ты агент планирования для роли: ${roleDescription}. Управляешь расписанием выполнения всех автоматизированных процессов, оптимизируешь загрузку системных ресурсов, избегаешь конфликтов при одновременном выполнении задач. Учитываешь приоритеты процессов, доступность внешних систем, пиковые нагрузки. Автоматически переносишь выполнение задач при возникновении конфликтов или технических проблем.`,
+                    automationPipeline: {
+                        platform: "Make",
+                        steps: [
+                            {
+                                step: 1,
+                                action: "Анализ очереди задач",
+                                tool: "Google Calendar",
+                                description: "Проверка запланированных автоматизаций"
+                            },
+                            {
+                                step: 2,
+                                action: "Оптимизация расписания",
+                                tool: "OpenAI",
+                                description: "Планирование оптимального времени выполнения"
+                            },
+                            {
+                                step: 3,
+                                action: "Проверка доступности ресурсов",
+                                tool: "OpenAI",
+                                description: "Анализ загрузки систем и API лимитов"
+                            },
+                            {
+                                step: 4,
+                                action: "Обновление календаря выполнения",
+                                tool: "Google Calendar",
+                                description: "Корректировка расписания автоматизаций"
+                            },
+                            {
+                                step: 5,
+                                action: "Уведомление об изменениях",
+                                tool: "Telegram Bot",
+                                description: "Информирование о переносах или конфликтах"
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
     }
 }
 
