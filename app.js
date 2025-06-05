@@ -1227,26 +1227,83 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
     }
 
     generateMakeWorkflow(caseItem) {
-        const modules = caseItem.automationPipeline?.steps?.map((step, index) => ({
-            id: index + 1,
-            module: step.tool.replace(/\s+/g, '').toLowerCase(),
-            version: 1,
-            parameters: {},
-            mapper: {},
-            metadata: {
-                designer: {
-                    x: 100 + (index * 200),
-                    y: 100
-                },
-                restore: {},
-                parameters: [],
-                expect: []
+        const steps = caseItem.automationPipeline?.steps || [];
+        
+        // Создаем модули для Make.com
+        const modules = steps.map((step, index) => {
+            const moduleId = index + 1;
+            
+            // Определяем тип модуля на основе инструмента
+            let moduleType = 'custom';
+            let appName = step.tool.toLowerCase();
+            
+            if (appName.includes('gmail') || appName.includes('email')) {
+                moduleType = 'gmail';
+                appName = 'gmail';
+            } else if (appName.includes('openai') || appName.includes('gpt')) {
+                moduleType = 'openai-gpt-3';
+                appName = 'openai-gpt-3';
+            } else if (appName.includes('telegram')) {
+                moduleType = 'telegram-bot';
+                appName = 'telegram-bot';
+            } else if (appName.includes('google')) {
+                moduleType = 'google-sheets';
+                appName = 'google-sheets';
+            } else if (appName.includes('slack')) {
+                moduleType = 'slack';
+                appName = 'slack';
             }
-        })) || [];
+            
+            return {
+                id: moduleId,
+                module: `${appName}:${index === 0 ? 'TriggerAction' : 'ActionModule'}`,
+                version: 3,
+                parameters: {
+                    __IMTCONN__: null
+                },
+                mapper: {
+                    text: step.description || step.action
+                },
+                metadata: {
+                    designer: {
+                        x: 100 + (index * 300),
+                        y: 100,
+                        name: step.action
+                    },
+                    restore: {
+                        parameters: {
+                            __IMTCONN__: {
+                                data: {},
+                                label: step.tool
+                            }
+                        }
+                    },
+                    parameters: [
+                        {
+                            name: "__IMTCONN__",
+                            type: "account",
+                            label: "Connection",
+                            required: true
+                        }
+                    ]
+                }
+            };
+        });
+
+        // Создаем соединения между модулями
+        const connections = [];
+        for (let i = 0; i < modules.length - 1; i++) {
+            connections.push({
+                id: i + 1,
+                srcModuleId: modules[i].id,
+                srcPort: 0,
+                dstModuleId: modules[i + 1].id,
+                dstPort: 0
+            });
+        }
 
         return {
-            name: caseItem.title,
-            description: caseItem.description,
+            name: caseItem.title || "AI Agent Automation",
             flow: modules,
             metadata: {
                 instant: false,
@@ -1267,29 +1324,98 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
                     orphans: []
                 },
                 zone: "eu1.make.com"
-            }
+            },
+            connections: connections
         };
     }
 
     generateN8nWorkflow(caseItem) {
-        const nodes = caseItem.automationPipeline?.steps?.map((step, index) => ({
-            id: `node_${index}`,
-            name: step.action,
-            type: step.tool.replace(/\s+/g, '').toLowerCase(),
-            typeVersion: 1,
-            position: [100 + (index * 200), 100],
-            parameters: {},
-            credentials: {},
-            webhookId: index === 0 ? "webhook_id" : undefined
-        })) || [];
+        const steps = caseItem.automationPipeline?.steps || [];
+        
+        // Создаем узлы для n8n workflow
+        const nodes = steps.map((step, index) => {
+            const nodeId = `node${index}`;
+            const position = [200 + (index * 300), 200];
+            
+            // Определяем тип узла на основе инструмента
+            let nodeType = 'n8n-nodes-base.httpRequest';
+            let nodeName = step.tool;
+            
+            if (step.tool.toLowerCase().includes('gmail') || step.tool.toLowerCase().includes('email')) {
+                nodeType = 'n8n-nodes-base.gmail';
+                nodeName = 'Gmail';
+            } else if (step.tool.toLowerCase().includes('openai') || step.tool.toLowerCase().includes('gpt')) {
+                nodeType = 'n8n-nodes-base.openAi';
+                nodeName = 'OpenAI';
+            } else if (step.tool.toLowerCase().includes('telegram')) {
+                nodeType = 'n8n-nodes-base.telegram';
+                nodeName = 'Telegram';
+            } else if (step.tool.toLowerCase().includes('google sheets')) {
+                nodeType = 'n8n-nodes-base.googleSheets';
+                nodeName = 'Google Sheets';
+            } else if (step.tool.toLowerCase().includes('slack')) {
+                nodeType = 'n8n-nodes-base.slack';
+                nodeName = 'Slack';
+            } else if (step.tool.toLowerCase().includes('webhook') || index === 0) {
+                nodeType = 'n8n-nodes-base.webhook';
+                nodeName = 'Webhook';
+            }
+            
+            const node = {
+                parameters: {
+                    // Базовые параметры зависят от типа узла
+                    ...(nodeType === 'n8n-nodes-base.webhook' ? {
+                        path: `automation-webhook-${Date.now()}`,
+                        httpMethod: 'POST',
+                        responseMode: 'onReceived'
+                    } : {}),
+                    ...(nodeType === 'n8n-nodes-base.openAi' ? {
+                        resource: 'text',
+                        operation: 'complete',
+                        prompt: step.description || step.action,
+                        maxTokens: 1000
+                    } : {}),
+                    ...(step.description ? { description: step.description } : {})
+                },
+                id: nodeId,
+                name: `${nodeName}${index > 0 ? ` ${index}` : ''}`,
+                type: nodeType,
+                typeVersion: 1,
+                position: position,
+                ...(nodeType === 'n8n-nodes-base.webhook' ? {
+                    webhookId: `${nodeId}-webhook`
+                } : {})
+            };
+            
+            return node;
+        });
+        
+        // Если нет шагов, создаем базовый webhook узел
+        if (nodes.length === 0) {
+            nodes.push({
+                parameters: {
+                    path: `automation-webhook-${Date.now()}`,
+                    httpMethod: 'POST',
+                    responseMode: 'onReceived'
+                },
+                id: 'node0',
+                name: 'Webhook',
+                type: 'n8n-nodes-base.webhook',
+                typeVersion: 1,
+                position: [200, 200],
+                webhookId: 'node0-webhook'
+            });
+        }
 
+        // Создаем соединения между узлами
         const connections = {};
         nodes.forEach((node, index) => {
             if (index < nodes.length - 1) {
+                const nextNode = nodes[index + 1];
                 connections[node.name] = {
                     main: [[{
-                        node: nodes[index + 1].name,
-                        type: "main",
+                        node: nextNode.name,
+                        type: 'main',
                         index: 0
                     }]]
                 };
@@ -1297,15 +1423,18 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}
         });
 
         return {
-            name: caseItem.title,
+            name: caseItem.title || 'AI Agent Workflow',
             nodes: nodes,
             connections: connections,
             active: false,
-            settings: {},
+            settings: {
+                executionOrder: 'v1'
+            },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            versionId: "1",
-            id: `workflow_${Date.now()}`
+            versionId: 1,
+            id: Date.now().toString(),
+            tags: ['ai-agent', 'automation']
         };
     }
 
