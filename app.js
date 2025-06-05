@@ -33,14 +33,15 @@ class AIDelegate {
             this.analyzeRole();
         });
 
-        // Clear button
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            this.clearResults();
+
+
+        // New secondary action buttons
+        document.getElementById('generateMoreBtn2').addEventListener('click', () => {
+            this.generateMoreCases();
         });
 
-        // Generate more button
-        document.getElementById('generateMoreBtn').addEventListener('click', () => {
-            this.generateMoreCases();
+        document.getElementById('clearBtn2').addEventListener('click', () => {
+            this.clearResults();
         });
 
         // Test API button
@@ -203,8 +204,7 @@ class AIDelegate {
             </div>
         `;
         
-        // Скрываем кнопку "Сгенерировать еще"
-        document.getElementById('generateMoreBtn').classList.add('hidden');
+
     }
 
     async displayResultsGradually(recommendations) {
@@ -241,10 +241,7 @@ class AIDelegate {
             this.updateCasesCount(i + 1);
         }
         
-        // Показываем кнопку "Сгенерировать еще"
-        setTimeout(() => {
-            document.getElementById('generateMoreBtn').classList.remove('hidden');
-        }, 500);
+
     }
 
     async generateMoreCases() {
@@ -259,7 +256,9 @@ class AIDelegate {
         }
 
         const roleDescription = document.getElementById('roleDescription').value.trim();
-        this.showMoreLoading(true);
+        
+        // Показываем прогресс-бар вместо кнопок
+        this.showProgressForMoreGeneration(true);
         
         try {
             // Передаем полный контекст первой генерации
@@ -277,7 +276,7 @@ class AIDelegate {
             console.error('Error generating more cases:', error);
             this.showError('Ошибка при генерации дополнительных кейсов: ' + error.message);
         } finally {
-            this.showMoreLoading(false);
+            this.showProgressForMoreGeneration(false);
         }
     }
 
@@ -721,8 +720,7 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
         document.getElementById('roleAnalysisContent').textContent = recommendations.roleAnalysis;
         document.getElementById('bestPracticesContent').textContent = recommendations.bestPractices;
         
-        // Show generate more button
-        document.getElementById('generateMoreBtn').classList.remove('hidden');
+
         
         // Display cases in center panel
         this.displayCasesList(recommendations.automationCases);
@@ -917,14 +915,50 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
         // Update cases count
         this.updateCasesCount(0);
         
-        // Hide generate more button
-        document.getElementById('generateMoreBtn').classList.add('hidden');
+
+        
+        // Переключаем обратно на первичную кнопку
+        this.switchToPrimaryActions();
     }
 
     // Очистить все прочитанные кейсы
     clearReadCases() {
         this.readCases.clear();
         this.saveReadCases();
+    }
+
+    // Переключение на вторичные действия (после генерации)
+    switchToSecondaryActions() {
+        document.getElementById('primaryActions').classList.add('hidden');
+        document.getElementById('secondaryActions').classList.remove('hidden');
+    }
+
+    // Переключение на первичную кнопку (после очистки)
+    switchToPrimaryActions() {
+        document.getElementById('primaryActions').classList.remove('hidden');
+        document.getElementById('secondaryActions').classList.add('hidden');
+    }
+
+    // Показ прогресс-бара во время генерации дополнительных кейсов
+    showProgressForMoreGeneration(show) {
+        const progressContainer = document.getElementById('generationProgress');
+        const secondaryActions = document.getElementById('secondaryActions');
+        
+        if (show) {
+            // Скрываем кнопки и показываем прогресс-бар
+            secondaryActions.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            
+            // Начинаем анимацию прогресса
+            this.startProgressAnimation();
+        } else {
+            // Скрываем прогресс-бар и показываем кнопки
+            progressContainer.classList.add('hidden');
+            secondaryActions.classList.remove('hidden');
+            
+            // Сбрасываем прогресс
+            this.resetProgress();
+        }
     }
 
     downloadJSON(data, filename) {
@@ -940,32 +974,37 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
     }
 
     showLoading(show) {
-        const btn = document.getElementById('analyzeBtn');
         const progressContainer = document.getElementById('generationProgress');
+        const primaryActions = document.getElementById('primaryActions');
+        const secondaryActions = document.getElementById('secondaryActions');
         
         console.log('showLoading called with show:', show);
-        console.log('analyzeBtn element found:', !!btn);
         console.log('generationProgress element found:', !!progressContainer);
+        console.log('primaryActions element found:', !!primaryActions);
+        console.log('secondaryActions element found:', !!secondaryActions);
         
-        if (!btn || !progressContainer) {
+        if (!progressContainer || !primaryActions || !secondaryActions) {
             console.error('Required elements not found for loading state');
             return;
         }
         
         if (show) {
-            // Скрываем кнопку и показываем прогресс-бар
-            btn.style.display = 'none';
+            // Скрываем все группы кнопок и показываем прогресс-бар
+            primaryActions.classList.add('hidden');
+            secondaryActions.classList.add('hidden');
             progressContainer.classList.remove('hidden');
             
             // Начинаем анимацию прогресса
             this.startProgressAnimation();
         } else {
-            // Показываем кнопку и скрываем прогресс-бар
-            btn.style.display = 'flex';
+            // Скрываем прогресс-бар и показываем соответствующие кнопки
             progressContainer.classList.add('hidden');
             
             // Сбрасываем прогресс
             this.resetProgress();
+            
+            // Показываем вторичные кнопки (так как генерация завершена)
+            this.switchToSecondaryActions();
         }
     }
 
@@ -1027,19 +1066,8 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
     }
 
     showMoreLoading(show) {
-        const btn = document.getElementById('generateMoreBtn');
-        const btnText = btn.querySelector('.btn-text');
-        const btnLoader = btn.querySelector('.btn-loader');
-        
-        if (show) {
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'inline-block';
-            btn.disabled = true;
-        } else {
-            btnText.style.display = 'inline-block';
-            btnLoader.style.display = 'none';
-            btn.disabled = false;
-        }
+        // Эта функция теперь не используется, так как используется прогресс-бар
+        // Оставляем для обратной совместимости
     }
 
     showTestLoading(show) {

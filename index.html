@@ -51,10 +51,20 @@
                     <textarea id="roleDescription" class="form-control role-textarea" rows="8" placeholder="Например: Chief Product Officer (CPO) в IT компании с командой 100+ человек. Отвечаю за продуктовую стратегию, управление roadmap, координацию между командами разработки, дизайна и маркетинга..."></textarea>
                 </div>
                 
-                <button id="analyzeBtn" class="btn btn-primary">
-                    <span class="btn-text">Сгенерировать рекомендации</span>
-                    <span class="btn-loader hidden">Анализируем...</span>
-                </button>
+                <div id="primaryActions" class="primary-actions">
+                    <button id="analyzeBtn" class="btn btn-primary">
+                        <span class="btn-text">Сгенерировать рекомендации</span>
+                        <span class="btn-loader hidden">Анализируем...</span>
+                    </button>
+                </div>
+                
+                <div id="secondaryActions" class="secondary-actions hidden">
+                    <button id="generateMoreBtn2" class="btn btn-primary">
+                        <span class="btn-text">Сгенерировать еще 6 кейсов</span>
+                        <span class="btn-loader hidden">Генерируем...</span>
+                    </button>
+                    <button id="clearBtn2" class="btn btn-ghost">Очистить результаты</button>
+                </div>
                 
                 <!-- Progress Bar for Generation -->
                 <div id="generationProgress" class="generation-progress hidden">
@@ -80,13 +90,7 @@
                         <h4>Лучшие практики</h4>
                         <div id="bestPracticesContent" class="analysis-text"></div>
                     </div>
-                    <div class="analysis-actions">
-                        <button id="generateMoreBtn" class="btn btn-secondary hidden">
-                            <span class="btn-text">Сгенерировать еще 6 кейсов</span>
-                            <span class="btn-loader hidden">Генерируем...</span>
-                        </button>
-                        <button id="clearBtn" class="btn btn-ghost">Очистить результаты</button>
-                    </div>
+
                 </div>
             </section>
         </div>

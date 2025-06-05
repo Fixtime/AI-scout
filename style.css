@@ -2053,9 +2053,32 @@ select.form-control {
     margin-top: 0.5rem;
 }
 
+/* Группы кнопок для переключения действий */
+.primary-actions,
+.secondary-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.secondary-actions {
+    flex-direction: column; /* Вертикальное расположение кнопок */
+}
+
+.secondary-actions .btn {
+    width: 100%;
+    min-width: 160px;
+}
+
+.primary-actions .btn {
+    width: 100%;
+}
+
 /* Progress Bar Styles */
 .generation-progress {
-    padding: 1.5rem;
+    padding: 1.5rem 0; /* Убираем горизонтальные отступы */
     margin-top: 1rem;
 }
 
