@@ -191,9 +191,14 @@ class AIDelegate {
         const analysisSection = document.getElementById('analysisSection');
         analysisSection.classList.remove('hidden');
         
-        // Очищаем списки кейсов
+        // Заменяем плейсхолдер на загрузку кейсов
         const casesList = document.getElementById('casesList');
-        casesList.innerHTML = '<div class="loading-cases">Генерируем кейсы...</div>';
+        casesList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🤖</div>
+                <p>Генерируем кейсы...</p>
+            </div>
+        `;
         
         // Очищаем детали кейса
         const caseDetails = document.getElementById('caseDetails');
@@ -300,7 +305,7 @@ class AIDelegate {
 
 ВАЖНО: Если в кейсе выбрана платформа Make, то для поля automationPipeline.steps сгенерируй такой пайплайн, чтобы его можно было преобразовать в рабочий Make.com Blueprint. 
 
-ИСПОЛЬЗУЙ АКТУАЛЬНЫЕ ПРИЛОЖЕНИЯ MAKE, НО НЕ ОГРАНИЧИВАЙСЯ ИМИ:
+ИСПОЛЬЗУЙ АКТУАЛЬНЫЕ ПРИЛОЖЕНИЯ MAKE, НО НЕ ОГРАНИЧИВАЙСЯ ИМИ, а смотри в этот список https://teletype.in/@prompt_design/api_n8n
 AI: OpenAI (ChatGPT, Whisper, DALL-E), Anthropic Claude, ElevenLabs, Leonardo.ai, Cloudinary
 Productivity: Google Sheets, Google Calendar, ClickUp, Notion, AirTable  
 Marketing: Facebook Pages, Instagram for Business, Facebook Lead Ads, LinkedIn, Pinterest
@@ -308,7 +313,6 @@ Communication: Telegram Bot, Gmail, Slack
 Task tracking: Jira
 Customer Support: Intercom, Zendesk, Freshdesk, Help Scout, Fresh Service
 E-commerce: WooCommerce
-Trending: Bluesky, ClickFunnels 2.0, Braze, Snapchat Campaign Management
 
 Каждый шаг должен соответствовать реальному модулю Make из списка выше (например, gmail:TriggerAction, openai:ActionModule, google-sheets:ActionModule и т.д.), с обязательными параметрами и метаданными. Все соединения между модулями должны быть явно указаны. Запрещено использовать абстрактные шаги или устаревшие приложения. Все параметры должны быть заполнены плейсхолдерами или примерными значениями.
 
@@ -720,8 +724,6 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
         document.getElementById('roleAnalysisContent').textContent = recommendations.roleAnalysis;
         document.getElementById('bestPracticesContent').textContent = recommendations.bestPractices;
         
-
-        
         // Display cases in center panel
         this.displayCasesList(recommendations.automationCases);
         
@@ -813,7 +815,8 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
                     <span class="meta-label">Сложность:</span>
                             <span class="meta-value">${caseItem.complexity}</span>
                         </div>
-                </div>
+                    </div>
+
             </div>
             
                 <div class="detail-section">
@@ -867,6 +870,11 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
         document.getElementById('casesCount').textContent = `${count} кейс${count === 1 ? '' : count < 5 ? 'а' : 'ов'}`;
     }
 
+
+
+
+
+
     addMoreResults(newRecommendations) {
         // Add new cases to current results
         this.currentResults.automationCases = [...this.currentResults.automationCases, ...newRecommendations.automationCases];
@@ -914,8 +922,6 @@ ${existingTitles.map(title => `- ${title}`).join('\n')}`;
         
         // Update cases count
         this.updateCasesCount(0);
-        
-
         
         // Переключаем обратно на первичную кнопку
         this.switchToPrimaryActions();
@@ -2163,8 +2169,9 @@ ${JSON.stringify(workflowJSON, null, 2)}
         console.log('Testing fallback functionality...');
         const fallbackData = this.getFallbackResponse();
         this.displayResults(fallbackData);
-        this.showSuccess('✅ Тест завершен! Показаны демо-данные (6 кейсов автоматизации)');
     }
+
+
 
     // Загрузка прочитанных кейсов из localStorage
     loadReadCases() {

@@ -1,23 +1,45 @@
 <!DOCTYPE html>
-<html lang="ru" data-color-scheme="dark">
+<html lang="ru" data-color-scheme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI scout</title>
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
     <div class="ide-container">
         <!-- Левая колонка: Настройки и анализ -->
         <div class="left-panel">
             <header class="panel-header">
-                <div>
-                    <h1>AI scout</h1>
-                    <p class="header-subtitle">Скаут найдет место для агентов в твоей работе</p>
+                <div class="header-content">
+                    <div class="header-title">
+                        <svg class="logo" width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#7c3aed;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Octopus body -->
+                            <ellipse cx="16" cy="12" rx="8" ry="6" fill="url(#headerGradient)"/>
+                            <!-- Eyes -->
+                            <circle cx="13" cy="10" r="1.5" fill="white"/>
+                            <circle cx="19" cy="10" r="1.5" fill="white"/>
+                            <circle cx="13" cy="10" r="0.8" fill="black"/>
+                            <circle cx="19" cy="10" r="0.8" fill="black"/>
+                            <!-- Tentacles -->
+                            <path d="M10 17 Q8 20 6 23 Q5 25 7 26 Q9 25 8 22 Q10 19 12 18" fill="url(#headerGradient)" opacity="0.9"/>
+                            <path d="M14 18 Q12 22 10 26 Q9 28 11 29 Q13 28 12 25 Q14 21 16 19" fill="url(#headerGradient)" opacity="0.9"/>
+                            <path d="M18 18 Q20 22 22 26 Q23 28 21 29 Q19 28 20 25 Q18 21 16 19" fill="url(#headerGradient)" opacity="0.9"/>
+                            <path d="M22 17 Q24 20 26 23 Q27 25 25 26 Q23 25 24 22 Q22 19 20 18" fill="url(#headerGradient)" opacity="0.9"/>
+                        </svg>
+                        <h1>AI scout</h1>
+                    </div>
+                    <p class="header-subtitle">Скаут найдёт место AI-агентам в твоей работе</p>
                 </div>
-                <button id="themeToggle" class="theme-toggle" title="Переключить тему">
-                    <span class="theme-icon">🌙</span>
-                </button>
             </header>
 
             <!-- API Key Section -->
@@ -38,7 +60,7 @@
                     <small class="api-warning">⚠️ Не сохраняется, только для сессии</small>
                     <button id="testApiBtn" class="btn btn-ghost" style="margin-top: 8px; width: 100%; font-size: 12px;">
                         <span class="btn-text">Тест API соединения</span>
-                        <span class="btn-loader hidden">Тестируем...</span>
+                        <span class="btn-loader hidden">Тестируем, дождитесь ответа</span>
                     </button>
                 </div>
             </section>
@@ -92,6 +114,11 @@
                     </div>
 
                 </div>
+                
+                <!-- Contact Info -->
+                <div class="contact-info">
+                    <p>Вопросы пишите в Telegram <a href="https://t.me/fixtimer" target="_blank">@fixtimer</a></p>
+                </div>
             </section>
         </div>
 
@@ -99,7 +126,9 @@
         <div class="center-panel">
             <div class="panel-header">
                 <h3>Кейсы автоматизации</h3>
-                <span id="casesCount" class="cases-count">0 кейсов</span>
+                <div class="header-info">
+                    <span id="casesCount" class="cases-count">0 кейсов</span>
+                </div>
             </div>
             <div id="casesList" class="cases-list">
                 <div class="empty-state">
@@ -113,6 +142,9 @@
         <div class="right-panel">
             <div class="panel-header">
                 <h3>Детали кейса</h3>
+                <button id="themeToggle" class="theme-toggle" title="Переключить тему">
+                    <span class="theme-icon">🌙</span>
+                </button>
             </div>
             <div id="caseDetails" class="case-details">
                 <div class="empty-state">
@@ -150,7 +182,7 @@
     <!-- Messages Container -->
     <div id="messagesContainer" class="messages-container"></div>
 
-    <script src="app.js?v=31"></script>
+    <script src="app.js?v=38"></script>
     <script>
         const app = new AIDelegate();
     </script>
